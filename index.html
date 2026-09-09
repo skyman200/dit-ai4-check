@@ -161,10 +161,16 @@ function initDept(){
   render();
 }
 
+function _sortKey(st){ return st==='적용대상'?0:(st==='적용불가'?1:(st==='공통'?2:3)); } // 미선택(적용대상) 먼저, 적용완료 맨 뒤
 function render(){
   var tb=document.getElementById('rows'); tb.innerHTML='';
-  DEPT.courses.forEach(function(c,i){
-    var st=c.status;
+  // 원본 인덱스 유지한 채 표시 순서만 정렬: 적용대상 → 적용불가 → 공통 → 적용완료
+  var order=DEPT.courses.map(function(c,i){return {c:c,i:i};}).sort(function(a,b){
+    var d=_sortKey(a.c.status)-_sortKey(b.c.status); if(d!==0)return d; return a.i-b.i;
+  });
+  var seq=0;
+  order.forEach(function(o){
+    var c=o.c, i=o.i, st=c.status; seq++;
     var cls=st==='적용완료'?'ok':(st==='적용불가'?'co':(st==='공통'?'co':'wk'));
     var tr=document.createElement('tr'); tr.className=cls;
     var judge, sel;
@@ -172,7 +178,7 @@ function render(){
     else if(st==='공통'){ judge='<span class="badge b-co">학과공통</span>'; sel='<span class="mini">학과공통 — 개별 판정 제외</span>'; }
     else if(st==='적용불가'){ judge='<span class="badge b-ng">적용불가</span>'; sel='<span class="mini">현장실습 등 — 적용 불가로 분류됨</span>'; }
     else { judge='<span class="badge b-todo" id="bd'+i+'">미선택</span><div class="mini">현재 AI '+c.ai+'주</div>'; sel=verdictBox(i,c); }
-    tr.innerHTML='<td>'+(i+1)+'</td>'
+    tr.innerHTML='<td>'+seq+'</td>'
       +'<td><div class="nm">'+esc(c.name)+'</div><div class="mini">'+esc(c.prof||'미지정')+(c.weeks?(' · 전체 '+c.weeks.length+'주'):'')+'</div></td>'
       +'<td style="text-align:center">'+judge+'</td><td>'+sel+'</td>';
     tb.appendChild(tr);
@@ -313,6 +319,32 @@ function stopProgress(ok){
   if(ok){ bar.style.width='100%'; pct.textContent='100%'; ti.textContent='완료!'; step.textContent='결과를 표시합니다.'; }
   setTimeout(function(){ document.getElementById('overlay').style.display='none'; },ok?350:0);
 }
+function buildResultView(selections){
+  // 반영 대상 과목만 최종 강의계획서 결과물 렌더
+  var applied=selections.filter(function(s){return s.verdict==='적용';});
+  var denied=selections.filter(function(s){return s.verdict==='적용불가';});
+  var html='<div style="background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:12px">';
+  html+='<h3 style="color:var(--navy);font-size:16px;margin:0 0 6px">📄 확정 결과 — 반영 강의계획서</h3>';
+  if(denied.length) html+='<p class="mini">✕ 적용 불가: '+denied.map(function(s){return esc(s.name);}).join(', ')+'</p>';
+  if(!applied.length){ html+='<p class="mini">반영할 과목이 없습니다.</p></div>'; return html; }
+  applied.forEach(function(s){
+    var c=DEPT.courses.filter(function(x){return x.name===s.name;})[0];
+    if(!c||!c.weeks||!c.weeks.length){ html+='<h4 style="color:var(--navy2);margin:14px 0 2px">'+esc(s.name)+' <span class="mini" style="font-weight:400">— ①개선안 적용</span></h4>'; return; }
+    var label=s.method==='fix'?'① 개선안 적용 (AI '+(c.addSeqs||[]).join('·')+'주)':(s.method==='weeks'?'② 주차별 선택 ('+(s.weeks||[]).join('·')+'주)':'③ 본인 직접 완성');
+    html+='<h4 style="color:var(--navy2);font-size:14px;margin:14px 0 2px">'+esc(s.name)+' <span class="mini" style="font-weight:400">('+esc(c.prof||'')+') · '+label+'</span></h4>';
+    html+='<table class="syl">'+sylHeadChk(false)+'<tbody>';
+    c.weeks.forEach(function(w){
+      var topic=w.topic,goal=w.goal,gear=w.gear||'',task=w.task||'',remark=w.remark||'',ai=false;
+      if(s.method==='fix'){ var on0=(c.addSeqs||[]).indexOf(w.seq)>=0; if(on0&&w.applicable){var v=wkView(w,true);topic=v.topic;goal=v.goal;remark=v.remark;ai=true;} }
+      else if(s.method==='weeks'){ var on=(s.weeks||[]).indexOf(w.seq)>=0; if(on&&w.applicable){var v2=wkView(w,true);topic=v2.topic;goal=v2.goal;remark=v2.remark;ai=true;} }
+      else if(s.method==='self'&&s.edited){ var e=s.edited.filter(function(x){return String(x.seq)===String(w.seq);})[0]; if(e){topic=e.topic;goal=e.goal;gear=e.gear;task=e.task;remark=e.remark;} }
+      html+='<tr class="'+(ai?'aiw':'')+'"><td class="wkno">'+w.seq+(ai?'<span class="aiflag">AI</span>':'')+'</td><td>'+esc(topic)+'</td><td>'+esc(goal)+'</td><td>'+esc(gear)+'</td><td>'+esc(task)+'</td><td>'+esc(remark)+'</td></tr>';
+    });
+    html+='</tbody></table>';
+  });
+  html+='</div>';
+  return html;
+}
 function doSubmit(){
   if(!document.getElementById('agree').checked){var m=document.getElementById('msg');m.className='err-msg';m.textContent='※ 교무 수정 동의에 체크해야 제출할 수 있습니다.';document.getElementById('agree').focus();return;}
   var msg=document.getElementById('msg'), warn=[], selections=[];
@@ -346,6 +378,8 @@ function doSubmit(){
         try{ var arr=JSON.parse(localStorage.getItem('aid_submitted')||'[]'); if(arr.indexOf(DEPT.name)<0)arr.push(DEPT.name); localStorage.setItem('aid_submitted',JSON.stringify(arr)); SUBMITTED[DEPT.name]=1; }catch(e){}
         msg.className='ok-msg';
         msg.innerHTML='\u2705 \uc81c\ucd9c \uc644\ub8cc! AI \uc801\uc6a9 '+res.apply+'\uacfc\ubaa9 \u00b7 \uc801\uc6a9 \ubd88\uac00 '+res.deny+'\uacfc\ubaa9.<br>\ud655\uc815 \uacb0\uacfc PDF\uac00 \uacb0\uacfc\ubc1b\uae30 \ud3f4\ub354\uc5d0 \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4'+(res.copied?(' (\uac1c\uc120\uc548 PDF '+res.copied+'\uac74 \ud3ec\ud568)'):'')+'.<br>\u2192 <a href="'+res.folderUrl+'" target="_blank">\uacb0\uacfc\ubc1b\uae30/'+DEPT.name+' \ud3f4\ub354 \uc5f4\uae30</a>';
+        msg.innerHTML+=buildResultView(selections);
+        window.scrollTo(0,document.body.scrollHeight);
       } else {
         msg.className='err-msg'; msg.textContent='\u26a0 '+((res&&res.error)||'\uc81c\ucd9c \uc2e4\ud328');
         document.getElementById('submitBtn').disabled=false;

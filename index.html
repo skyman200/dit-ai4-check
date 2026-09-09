@@ -145,7 +145,7 @@ a.dept .nm{font-weight:700;font-size:15px} a.dept .cnt{color:#5C6B7B;font-size:1
 
 var DEPT = null;
 var DC=null;
-var CH={}, CONFIRMED={}, SELF={};
+var CH={}, CONFIRMED={}, SELF={}, SAVED={};
 
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function isExam(p){p=(p||'').replace(/\s/g,'');return /중간|기말|시험|평가주|휴강|보강|오리엔|OT/.test(p);}
@@ -161,6 +161,8 @@ function initDept(){
   document.getElementById('agree').checked=false; var mm=document.getElementById('msg'); if(mm) mm.textContent='';
   renderDoneBanner();
   render();
+  restoreDraft();
+  updateSubmitBar();
 }
 function renderDoneBanner(){
   var el=document.getElementById('doneBanner'); if(!el) return;
@@ -221,6 +223,7 @@ function verdictBox(i,c){
    +'<div class="vrow"><input type="radio" name="v'+i+'" value="apply" id="v'+i+'a" onchange="setVerdict('+i+')"><label for="v'+i+'a"><b>AI 적용 대상</b> <span class="mini">— 아래에서 적용 방법 선택</span></label></div>'
    +'<div class="vrow"><input type="radio" name="v'+i+'" value="deny" id="v'+i+'d" onchange="setVerdict('+i+')"><label for="v'+i+'d"><b>적용 불가</b> <span class="mini">— 현장실습·임상실습 등 교내 생성형 AI 적용이 어려운 과목</span></label></div>'
    +'<div class="applyblk" id="ab'+i+'" style="display:none">'+(hasWk?applyOpts(i,c):'<span class="mini">이 과목은 주차 데이터가 없어 ①개선안 적용만 가능합니다.</span>')+'</div>'
+   +'<div style="margin-top:8px"><button class="btn sm" id="save'+i+'" onclick="saveCourse('+i+')" style="padding:7px 14px;font-size:13px">💾 이 과목 저장</button> <span class="state pend" id="sv'+i+'" style="margin-left:6px">미저장</span></div>'
    +'</div>';
 }
 function applyOpts(i,c){
@@ -375,29 +378,86 @@ function buildResultView(selections){
   html+='</div>';
   return html;
 }
+
+/* ===== 과목별 개별 저장 (3과목 중 1과목만 저장하고 나머지는 나중에) ===== */
+function collectSelection(i){
+  // 한 과목의 현재 선택을 selection 객체로. 유효하지 않으면 {error} 반환.
+  var c=DEPT.courses[i];
+  var v=(document.querySelector('input[name=v'+i+']:checked')||{}).value;
+  if(!v) return {error:'판정(AI 적용 대상/적용 불가)을 선택하세요.'};
+  if(v==='deny') return {name:c.name,verdict:'적용불가',method:'deny'};
+  var opt=(document.querySelector('input[name=opt'+i+']:checked')||{}).value||'fix';
+  if(opt==='weeks'){
+    if(!CONFIRMED[i]) return {error:'②주차선택에서 [✔ 선택 확인]을 눌러 주세요.'};
+    return {name:c.name,verdict:'적용',method:'weeks',weeks:selWeeks(i).map(Number)};
+  }
+  if(opt==='self'){
+    if(!(SELF[i]&&SELF[i].__done)) return {error:'③본인편집에서 [✔ 편집 완료]를 눌러 주세요.'};
+    var ed=[]; c.weeks.forEach(function(w){var s=SELF[i][w.seq];ed.push({seq:w.seq,topic:s.topic,goal:s.goal,gear:s.gear,task:s.task,remark:s.remark});});
+    return {name:c.name,verdict:'적용',method:'self',edited:ed};
+  }
+  return {name:c.name,verdict:'적용',method:'fix'};
+}
+function saveCourse(i){
+  var sel=collectSelection(i);
+  if(sel.error){ var sv=document.getElementById('sv'+i); if(sv){sv.className='state pend';sv.textContent='⚠ '+sel.error;} return; }
+  SAVED[i]=sel;
+  persistDraft();
+  var sv=document.getElementById('sv'+i);
+  if(sv){ sv.className='state done'; sv.textContent='✔ 저장됨 ('+methodShort(sel)+')'; }
+  updateSubmitBar();
+}
+function methodShort(s){
+  if(s.verdict==='적용불가')return '적용불가';
+  if(s.method==='weeks')return '주차선택 '+(s.weeks||[]).length+'주';
+  if(s.method==='self')return '본인편집';
+  return '개선안';
+}
+function persistDraft(){
+  try{ var out={}; Object.keys(SAVED).forEach(function(k){out[DEPT.courses[k].name]=SAVED[k];});
+    localStorage.setItem('aid_draft_'+DEPT.dc, JSON.stringify(out)); }catch(e){}
+}
+function restoreDraft(){
+  try{
+    var raw=localStorage.getItem('aid_draft_'+DEPT.dc); if(!raw)return;
+    var saved=JSON.parse(raw);
+    DEPT.courses.forEach(function(c,i){
+      var s=saved[c.name]; if(!s||c.status!=='적용대상')return;
+      SAVED[i]=s;
+      // 화면 선택 복원
+      if(s.verdict==='적용불가'){ var rd=document.getElementById('v'+i+'d'); if(rd){rd.checked=true;setVerdict(i);} }
+      else {
+        var ra=document.getElementById('v'+i+'a'); if(ra){ra.checked=true;setVerdict(i);}
+        if(s.method==='weeks'){ CH[i]={}; (s.weeks||[]).forEach(function(x){CH[i][x]=true;}); CONFIRMED[i]=true; var ob=document.getElementById('o'+i+'b'); if(ob)ob.checked=true; updateState(i); }
+        else if(s.method==='self'){ SELF[i]={__done:true,__edited:(s.edited||[]).length}; (s.edited||[]).forEach(function(e){SELF[i][e.seq]={topic:e.topic,goal:e.goal,gear:e.gear,task:e.task,remark:e.remark};}); var oc=document.getElementById('o'+i+'c'); if(oc)oc.checked=true; updateState(i); }
+        else { var oa=document.getElementById('o'+i+'a'); if(oa)oa.checked=true; }
+      }
+      var sv=document.getElementById('sv'+i); if(sv){sv.className='state done';sv.textContent='✔ 저장됨 ('+methodShort(s)+')';}
+    });
+    updateSubmitBar();
+  }catch(e){}
+}
+function updateSubmitBar(){
+  var n=Object.keys(SAVED).length;
+  var need=DEPT.courses.filter(function(c){return c.status==='적용대상';}).length;
+  var b=document.getElementById('submitBtn');
+  if(b) b.textContent = n>0 ? ('저장한 '+n+'/'+need+'과목 제출하고 결과 PDF 받기') : '제출하고 결과 PDF 받기';
+}
 function doSubmit(){
   if(!document.getElementById('agree').checked){var m=document.getElementById('msg');m.className='err-msg';m.textContent='※ 교무 수정 동의에 체크해야 제출할 수 있습니다.';document.getElementById('agree').focus();return;}
-  var msg=document.getElementById('msg'), warn=[], selections=[];
+  var msg=document.getElementById('msg'), selections=[], unsaved=[];
   DEPT.courses.forEach(function(c,i){
-    var st=c.status;
-    if(st==='적용완료'){ selections.push({name:c.name,verdict:'적용완료',method:'kept'}); return; }
-    if(st==='공통'||st==='적용불가'){ return; }
-    var v=(document.querySelector('input[name=v'+i+']:checked')||{}).value;
-    if(!v){ warn.push(c.name+' (판정 미선택)'); return; }
-    if(v==='deny'){ selections.push({name:c.name,verdict:'적용불가',method:'deny'}); return; }
-    var opt=(document.querySelector('input[name=opt'+i+']:checked')||{}).value || 'fix';
-    if(opt==='weeks'){
-      if(!CONFIRMED[i]) warn.push(c.name+' (②주차선택 미확인)');
-      selections.push({name:c.name,verdict:'적용',method:'weeks',weeks:selWeeks(i).map(Number)});
-    } else if(opt==='self'){
-      if(!(SELF[i]&&SELF[i].__done)) warn.push(c.name+' (③편집 미완료)');
-      var edited=[]; c.weeks.forEach(function(w){var s=SELF[i][w.seq];edited.push({seq:w.seq,topic:s.topic,goal:s.goal,gear:s.gear,task:s.task,remark:s.remark});});
-      selections.push({name:c.name,verdict:'적용',method:'self',edited:edited});
-    } else {
-      selections.push({name:c.name,verdict:'적용',method:'fix'});
-    }
+    if(c.status==='적용완료'){ selections.push({name:c.name,verdict:'적용완료',method:'kept'}); return; }
+    if(c.status==='공통'||c.status==='적용불가'){ return; }
+    // 적용대상: 저장된 것만 제출. 미저장은 경고(제출에서 제외하고 나중에 저장 가능)
+    if(SAVED[i]){ selections.push(SAVED[i]); }
+    else { unsaved.push(c.name); }
   });
-  if(warn.length){ msg.className='err-msg'; msg.textContent='※ 아래 과목은 선택/확인이 필요합니다:\n  '+warn.join('\n  '); return; }
+  var appliedCnt=selections.filter(function(s){return s.verdict==='적용'||s.verdict==='적용불가';}).length;
+  if(appliedCnt===0){ msg.className='err-msg'; msg.textContent='※ 저장된 과목이 없습니다. 각 과목에서 [💾 이 과목 저장]을 먼저 눌러 주세요.'; return; }
+  if(unsaved.length){
+    if(!confirm('아직 저장하지 않은 과목 '+unsaved.length+'개('+unsaved.join(', ')+')는 이번 제출에서 제외됩니다.\n저장한 과목만 먼저 제출할까요? (나머지는 나중에 저장 후 다시 제출)')) return;
+  }
   startProgress();
   document.getElementById('submitBtn').disabled=true;
   fetch(EXEC,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({dc:DC,agree:true,selections:selections})})

@@ -1,0 +1,47 @@
+name: 제출완료 배지 자동 갱신
+
+on:
+  schedule:
+    # 30분마다 (UTC). 구글드라이브 '결과받기' 폴더를 읽어 배지 재계산.
+    - cron: "*/30 * * * *"
+  workflow_dispatch: {}   # 수동 실행 허용
+
+# PR/포크에서 트리거 불가 → drive 토큰 secret 탈취 방지.
+permissions:
+  contents: write
+
+concurrency:
+  group: update-badges
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 체크아웃
+        uses: actions/checkout@v4
+
+      - name: rclone 설치
+        uses: AnimMouse/setup-rclone@v1
+        with:
+          rclone_config: ${{ secrets.RCLONE_CONF }}
+
+      - name: 파이썬 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 배지 갱신
+        run: python3 scripts/update_badges.py
+
+      - name: 변경 시 커밋·푸시
+        run: |
+          if [[ -n "$(git status --porcelain index.html)" ]]; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add index.html
+            git commit -m "자동: 구글드라이브 제출완료 배지 갱신 [skip ci]"
+            git push
+          else
+            echo "변경 없음 — 커밋 생략"
+          fi

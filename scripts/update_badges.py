@@ -15,7 +15,7 @@ import json
 import os
 import subprocess
 import sys
-from datetime import date
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 REMOTE = os.environ.get("AID_RESULT_REMOTE", "gdrive:AID/결과받기")
@@ -42,7 +42,9 @@ def submitted_departments() -> list[str]:
 
 def main() -> int:
     depts = submitted_departments()
-    payload = {"submitted": depts, "asOf": date.today().isoformat()}
+    # 러너는 UTC → 한국 날짜(KST)로 표기
+    kst_today = datetime.now(timezone(timedelta(hours=9))).date()
+    payload = {"submitted": depts, "asOf": kst_today.isoformat()}
     new = json.dumps(payload, ensure_ascii=False, indent=1)
 
     old = OUT.read_text(encoding="utf-8") if OUT.exists() else ""

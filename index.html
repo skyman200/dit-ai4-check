@@ -47,7 +47,7 @@ tr.ok{background:#E4F5EC} tr.wk{background:var(--wk)} tr.co{background:#fff}
 .agree label{font-size:14px;font-weight:600;cursor:pointer;display:flex;gap:10px;align-items:flex-start}
 .agree input{margin-top:3px;transform:scale(1.3)}
 #msg{margin-top:8px;font-size:13px;text-align:left;white-space:pre-wrap} .ok-msg{color:var(--green)} .err-msg{color:var(--red)}
-#overlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,.85);z-index:30;justify-content:center;align-items:center;font-size:16px;color:var(--navy);font-weight:600}
+#overlay{display:none;position:fixed;inset:0;background:rgba(12,22,42,.55);z-index:30;justify-content:center;align-items:center}
 #modal{display:none;position:fixed;inset:0;background:rgba(12,22,42,.6);z-index:20;align-items:flex-start;justify-content:center;padding:24px}
 #modal .box{background:#fff;max-width:1040px;width:100%;max-height:90vh;overflow:auto;border-radius:14px;padding:20px 22px}
 #modal h3{margin:0 0 2px;color:var(--navy)} #modal .close{float:right;cursor:pointer;color:var(--sub);font-size:24px;line-height:1}
@@ -102,7 +102,12 @@ a.dept .nm{font-weight:700;font-size:15px} a.dept .cnt{color:#5C6B7B;font-size:1
 </div>
 <div id="detailWrap">
 
-<div id="overlay">제출 중… 결과 PDF를 생성하고 있습니다. 잠시만 기다려 주세요.</div>
+<div id="overlay"><div style="background:#fff;border-radius:16px;padding:26px 28px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center">
+  <div style="font-size:16px;font-weight:700;color:#1B2A4A;margin-bottom:4px" id="ovTitle">제출 중…</div>
+  <div style="font-size:12.5px;color:#5C6B7B;margin-bottom:14px" id="ovStep">확정 PDF를 생성하고 있습니다.</div>
+  <div style="height:12px;background:#EEF2F8;border-radius:8px;overflow:hidden"><div id="ovBar" style="height:100%;width:0%;background:linear-gradient(90deg,#28406E,#C55A0E);border-radius:8px;transition:width .3s"></div></div>
+  <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:12px;color:#5C6B7B"><span id="ovPct">0%</span><span id="ovSec">0초</span></div>
+</div></div>
 <div class="wrap">
   <p><a class="back" id="backBtn" href="#">← 학과 목록</a></p>
   <h1 id="dHead">AI 4주 적용 체크</h1>
@@ -283,6 +288,31 @@ function openModal(h){document.getElementById('modalBody').innerHTML=h;document.
 function closeModal(){document.getElementById('modal').style.display='none';}
 document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
 
+
+/* ===== 제출 진행률 표시 (앱스스크립트 PDF 생성 5~8초 체감 개선) ===== */
+var _progTimer=null, _progT0=0;
+function startProgress(){
+  var ov=document.getElementById('overlay'); ov.style.display='flex';
+  _progT0=Date.now();
+  var bar=document.getElementById('ovBar'),pct=document.getElementById('ovPct'),sec=document.getElementById('ovSec'),step=document.getElementById('ovStep');
+  bar.style.width='0%'; pct.textContent='0%';
+  var steps=[[15,'선택 내용을 확인하고 있습니다…'],[40,'강의계획서를 반영하는 중…'],[70,'확정 PDF를 생성하는 중…'],[88,'구글드라이브에 저장하는 중…']];
+  if(_progTimer)clearInterval(_progTimer);
+  _progTimer=setInterval(function(){
+    var el=(Date.now()-_progT0)/1000;
+    sec.textContent=el.toFixed(1)+'초';
+    // 8초를 목표로 로그 곡선처럼 95%까지
+    var p=Math.min(95, Math.round(95*(1-Math.exp(-el/3.2))));
+    bar.style.width=p+'%'; pct.textContent=p+'%';
+    for(var k=steps.length-1;k>=0;k--){ if(p>=steps[k][0]){ step.textContent=steps[k][1]; break; } }
+  },150);
+}
+function stopProgress(ok){
+  if(_progTimer){clearInterval(_progTimer);_progTimer=null;}
+  var bar=document.getElementById('ovBar'),pct=document.getElementById('ovPct'),step=document.getElementById('ovStep'),ti=document.getElementById('ovTitle');
+  if(ok){ bar.style.width='100%'; pct.textContent='100%'; ti.textContent='완료!'; step.textContent='결과를 표시합니다.'; }
+  setTimeout(function(){ document.getElementById('overlay').style.display='none'; },ok?350:0);
+}
 function doSubmit(){
   if(!document.getElementById('agree').checked){var m=document.getElementById('msg');m.className='err-msg';m.textContent='※ 교무 수정 동의에 체크해야 제출할 수 있습니다.';document.getElementById('agree').focus();return;}
   var msg=document.getElementById('msg'), warn=[], selections=[];
@@ -306,12 +336,12 @@ function doSubmit(){
     }
   });
   if(warn.length){ msg.className='err-msg'; msg.textContent='※ 아래 과목은 선택/확인이 필요합니다:\n  '+warn.join('\n  '); return; }
-  document.getElementById('overlay').style.display='flex';
+  startProgress();
   document.getElementById('submitBtn').disabled=true;
   fetch(EXEC,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({dc:DC,agree:true,selections:selections})})
     .then(function(r){return r.json();})
     .then(function(res){
-      document.getElementById('overlay').style.display='none';
+      stopProgress(true);
       if(res && res.ok){
         msg.className='ok-msg';
         msg.innerHTML='\u2705 \uc81c\ucd9c \uc644\ub8cc! AI \uc801\uc6a9 '+res.apply+'\uacfc\ubaa9 \u00b7 \uc801\uc6a9 \ubd88\uac00 '+res.deny+'\uacfc\ubaa9.<br>\ud655\uc815 \uacb0\uacfc PDF\uac00 \uacb0\uacfc\ubc1b\uae30 \ud3f4\ub354\uc5d0 \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4'+(res.copied?(' (\uac1c\uc120\uc548 PDF '+res.copied+'\uac74 \ud3ec\ud568)'):'')+'.<br>\u2192 <a href="'+res.folderUrl+'" target="_blank">\uacb0\uacfc\ubc1b\uae30/'+DEPT.name+' \ud3f4\ub354 \uc5f4\uae30</a>';
@@ -321,7 +351,7 @@ function doSubmit(){
       }
     })
     .catch(function(err){
-      document.getElementById('overlay').style.display='none';
+      stopProgress(false);
       msg.className='err-msg'; msg.textContent='\u26a0 \uc81c\ucd9c \uc624\ub958: '+err.message;
       document.getElementById('submitBtn').disabled=false;
     });

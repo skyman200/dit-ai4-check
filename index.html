@@ -40,6 +40,23 @@ a.dept .cnt{color:var(--sub);font-size:12.5px}
 .b-submit{background:#cfe0fb;color:#1b4fa0}
 .note{color:var(--sub);font-size:12px;line-height:1.7;margin-top:18px}
 .foot{text-align:center;color:#8a97a8;font-size:12px;margin-top:24px}
+/* 인앱 브라우저 탈출 오버레이 */
+#iabWrap{position:fixed;inset:0;background:rgba(12,22,42,.93);z-index:9999;display:none;align-items:center;justify-content:center;padding:22px}
+#iabWrap .box{background:#fff;color:var(--ink);max-width:430px;width:100%;border-radius:16px;padding:22px 20px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
+#iabWrap h3{margin:0 0 8px;color:var(--navy);font-size:18px}
+#iabWrap p{margin:8px 0;font-size:14px;line-height:1.65;color:var(--sub)}
+#iabWrap b{color:var(--orange)}
+#iabWrap .big{display:block;width:100%;margin-top:12px;padding:14px;border:0;border-radius:10px;background:var(--navy);color:#fff;font-size:15px;font-weight:700;cursor:pointer}
+#iabWrap .big.ghost{background:#EEF2F8;color:var(--navy)}
+#iabWrap .tip{background:#F7F9FC;border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:12px;font-size:13px;color:var(--ink);line-height:1.7}
+/* 로그인 충돌 도움말 */
+.help{margin:6px 0 16px;border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden}
+.help summary{cursor:pointer;list-style:none;padding:13px 15px;font-weight:700;color:var(--navy);font-size:13.5px;background:#FFF6EC}
+.help summary::-webkit-details-marker{display:none}
+.help .hb{padding:12px 15px;font-size:13px;line-height:1.75;color:var(--ink)}
+.help .hb b{color:var(--orange)}
+.help ol{margin:8px 0 0;padding-left:20px}
+.help li{margin:4px 0}
 </style>
 </head>
 <body>
@@ -57,6 +74,17 @@ a.dept .cnt{color:var(--sub);font-size:12.5px}
       <span class="chip">③ 교무 수정 동의</span>
       <span class="chip">④ 제출 → 결과받기 저장</span>
     </div>
+    <details class="help" id="helpBox">
+      <summary>❗ 화면이 안 열리거나 ‘로그인’·‘현재 파일을 열 수 없습니다’가 뜨나요? — 눌러서 해결</summary>
+      <div class="hb">
+        구글 <b>다중 로그인</b>(학교 <b>dit.ac.kr</b> 계정 + 개인 계정) 충돌이 원인입니다. 아래 중 하나면 바로 열립니다.
+        <ol>
+          <li><b>시크릿/게스트 창</b>으로 이 페이지를 다시 열어 학과를 누르세요. <b>(가장 확실)</b></li>
+          <li>학교 <b>dit.ac.kr 계정에서 로그아웃</b>하거나, <b>개인 지메일</b>로만 로그인하세요.</li>
+          <li>카카오톡·네이버 등 <b>인앱 브라우저</b>면 메뉴에서 <b>Chrome/Safari로 열기</b>를 선택하세요.</li>
+        </ol>
+      </div>
+    </details>
     <h2>학과 선택 (36개 · <span style="color:var(--green)">적용완료</span> 학과도 현황 확인 가능)</h2>
     <div class="grid">
       <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=4800000" target="_blank" rel="noopener">
@@ -212,5 +240,41 @@ a.dept .cnt{color:var(--sub);font-size:12.5px}
   </div>
   <div class="foot">문의: 교무처 / AID 사업 담당</div>
 </div>
+<div id="iabWrap"><div class="box">
+  <h3>기본 브라우저로 열어 주세요</h3>
+  <p>카카오톡·네이버 등 <b>인앱 브라우저</b>에서는 구글 로그인 충돌로 강의계획서 화면이 열리지 않을 수 있어요.</p>
+  <button class="big" id="iabOpen">Chrome / 기본 브라우저로 열기</button>
+  <button class="big ghost" id="iabCopy">링크 복사</button>
+  <div class="tip" id="iabTip">아이폰: 오른쪽 위·아래 <b>공유·⋯</b> → <b>Safari로 열기</b>. 그래도 로그인 요구가 뜨면 <b>시크릿/게스트 창</b>으로 열거나 학교(dit.ac.kr) 계정을 로그아웃하세요.</div>
+  <p style="text-align:center;margin:14px 0 0;font-size:12px">배경을 터치하면 이 안내를 닫습니다.</p>
+</div></div>
+<script>
+(function(){
+  var ua = navigator.userAgent || '';
+  var isKakao = /KAKAOTALK/i.test(ua);
+  var inApp = isKakao || /NAVER|Instagram|FBAN|FBAV|FB_IAB|Line\/|Daum|; wv\)|everytimeApp|band/i.test(ua);
+  if(!inApp) return;
+  var isAndroid = /Android/i.test(ua);
+  var url = location.href;
+  function openExternal(){
+    if(isKakao){ location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url); return; }
+    if(isAndroid){ location.href = 'intent://' + url.replace(/^https?:\/\//,'') + '#Intent;scheme=https;package=com.android.chrome;end'; return; }
+  }
+  function copyLink(){
+    var done=function(){ var b=document.getElementById('iabCopy'); if(b) b.textContent='✓ 복사됨 — 브라우저 주소창에 붙여넣기'; };
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(url).then(done, done); }
+    else { var t=document.createElement('textarea'); t.value=url; document.body.appendChild(t); t.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(t); done(); }
+  }
+  function mount(){
+    var w=document.getElementById('iabWrap'); if(!w) return;
+    w.style.display='flex';
+    document.getElementById('iabOpen').addEventListener('click', openExternal);
+    document.getElementById('iabCopy').addEventListener('click', copyLink);
+    w.addEventListener('click', function(e){ if(e.target===w) w.style.display='none'; }); // 배경 탭 → 닫기(랜딩페이지만 보기)
+    if(isKakao) setTimeout(openExternal, 300); // 카카오톡은 외부 브라우저 자동 시도
+  }
+  if(document.body) mount(); else document.addEventListener('DOMContentLoaded', mount);
+})();
+</script>
 </body>
 </html>

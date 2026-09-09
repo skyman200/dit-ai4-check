@@ -21,15 +21,24 @@ jobs:
       - name: 체크아웃
         uses: actions/checkout@v4
 
-      - name: rclone 설치
-        uses: AnimMouse/setup-rclone@v1
-        with:
-          rclone_config: ${{ secrets.RCLONE_CONF }}
-
       - name: 파이썬 설정
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      - name: rclone 설치
+        run: |
+          sudo -v ; curl -fsSL https://rclone.org/install.sh | sudo bash
+          rclone version
+
+      - name: rclone 설정 주입
+        env:
+          RCLONE_CONF: ${{ secrets.RCLONE_CONF }}
+        run: |
+          mkdir -p "$HOME/.config/rclone"
+          printf '%s' "$RCLONE_CONF" > "$HOME/.config/rclone/rclone.conf"
+          # 원격 목록만 확인(토큰 미출력)
+          rclone listremotes
 
       - name: 배지 갱신
         run: python3 scripts/update_badges.py

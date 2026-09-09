@@ -266,7 +266,7 @@ function sylHeadChk(chk){
   return cg+'<thead><tr>'+(chk?'<th>반영</th>':'')+'<th>주차</th><th>학습주제</th><th>주차별 목표(수행준거)</th><th>기자재및소모품</th><th>과제</th><th>비고</th></tr></thead>';
 }
 function showBA(i){var c=DEPT.courses[i];
-  function rows(on){var r='';c.weeks.forEach(function(w){var v=wkView(w, on && (c.addSeqs||[]).indexOf(w.seq)>=0);
+  function rows(on){var r='';c.weeks.forEach(function(w){var v=wkView(w, on && (c.addSeqs||[]).map(String).indexOf(String(w.seq))>=0);
     r+='<tr class="'+(v.ai?'aiw':'')+'"><td class="wkno">'+w.seq+(v.ai?'<span class="aiflag">AI</span>':'')+'</td>'
      +'<td>'+esc(v.topic)+'</td><td>'+esc(v.goal)+'</td><td>'+esc(v.gear)+'</td><td>'+esc(v.task)+'</td><td>'+esc(v.remark)+'</td></tr>';});return r;}
   var html='<h3>'+esc(c.name)+' — before → after (전체 강의계획서)</h3>'
@@ -368,8 +368,8 @@ function buildResultView(selections){
     html+='<table class="syl">'+sylHeadChk(false)+'<tbody>';
     c.weeks.forEach(function(w){
       var topic=w.topic,goal=w.goal,gear=w.gear||'',task=w.task||'',remark=w.remark||'',ai=false;
-      if(s.method==='fix'){ var on0=(c.addSeqs||[]).indexOf(w.seq)>=0; if(on0&&w.applicable){var v=wkView(w,true);topic=v.topic;goal=v.goal;remark=v.remark;ai=true;} }
-      else if(s.method==='weeks'){ var on=(s.weeks||[]).indexOf(w.seq)>=0; if(on&&w.applicable){var v2=wkView(w,true);topic=v2.topic;goal=v2.goal;remark=v2.remark;ai=true;} }
+      if(s.method==='fix'){ var on0=(c.addSeqs||[]).map(String).indexOf(String(w.seq))>=0; if(on0&&w.applicable){var v=wkView(w,true);topic=v.topic;goal=v.goal;remark=v.remark;ai=true;} }
+      else if(s.method==='weeks'){ var on=(s.weeks||[]).map(String).indexOf(String(w.seq))>=0; if(on&&w.applicable){var v2=wkView(w,true);topic=v2.topic;goal=v2.goal;remark=v2.remark;ai=true;} }
       else if(s.method==='self'&&s.edited){ var e=s.edited.filter(function(x){return String(x.seq)===String(w.seq);})[0]; if(e){topic=e.topic;goal=e.goal;gear=e.gear;task=e.task;remark=e.remark;} }
       html+='<tr class="'+(ai?'aiw':'')+'"><td class="wkno">'+w.seq+(ai?'<span class="aiflag">AI</span>':'')+'</td><td>'+esc(topic)+'</td><td>'+esc(goal)+'</td><td>'+esc(gear)+'</td><td>'+esc(task)+'</td><td>'+esc(remark)+'</td></tr>';
     });

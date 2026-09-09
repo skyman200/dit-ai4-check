@@ -321,7 +321,8 @@ function showSelf(i){var c=DEPT.courses[i];
   document.querySelectorAll('#modal .self td[contenteditable]').forEach(function(td){
     td.addEventListener('input',function(){SELF[this.getAttribute('data-i')][this.getAttribute('data-seq')][this.getAttribute('data-f')]=this.textContent;});});}
 function confirmSelf(i){var c=DEPT.courses[i],e=0;
-  c.weeks.forEach(function(w){var s=SELF[i][w.seq];if(s.topic!==w.topic||s.goal!==w.goal||s.gear!==(w.gear||'')||s.task!==(w.task||'')||s.remark!==(w.remark||''))e++;});
+  if(!SELF[i])SELF[i]={};
+  c.weeks.forEach(function(w){var s=SELF[i][w.seq]||(SELF[i][w.seq]={topic:w.topic,goal:w.goal,gear:w.gear||'',task:w.task||'',remark:w.remark||''});if(s.topic!==w.topic||s.goal!==w.goal||s.gear!==(w.gear||'')||s.task!==(w.task||'')||s.remark!==(w.remark||''))e++;});
   SELF[i].__done=true;SELF[i].__edited=e;document.getElementById('o'+i+'c').checked=true;updateState(i);closeModal();}
 function openModal(h){document.getElementById('modalBody').innerHTML=h;document.getElementById('modal').style.display='flex';document.getElementById('modal').scrollTop=0;}
 function closeModal(){document.getElementById('modal').style.display='none';}
@@ -393,7 +394,7 @@ function collectSelection(i){
   }
   if(opt==='self'){
     if(!(SELF[i]&&SELF[i].__done)) return {error:'③본인편집에서 [✔ 편집 완료]를 눌러 주세요.'};
-    var ed=[]; c.weeks.forEach(function(w){var s=SELF[i][w.seq];ed.push({seq:w.seq,topic:s.topic,goal:s.goal,gear:s.gear,task:s.task,remark:s.remark});});
+    var ed=[]; c.weeks.forEach(function(w){var s=(SELF[i]||{})[w.seq]||{topic:w.topic,goal:w.goal,gear:w.gear||'',task:w.task||'',remark:w.remark||''};ed.push({seq:w.seq,topic:s.topic,goal:s.goal,gear:s.gear||'',task:s.task||'',remark:s.remark||''});});
     return {name:c.name,verdict:'적용',method:'self',edited:ed};
   }
   return {name:c.name,verdict:'적용',method:'fix'};
@@ -429,7 +430,18 @@ function restoreDraft(){
       else {
         var ra=document.getElementById('v'+i+'a'); if(ra){ra.checked=true;setVerdict(i);}
         if(s.method==='weeks'){ CH[i]={}; (s.weeks||[]).forEach(function(x){CH[i][x]=true;}); CONFIRMED[i]=true; var ob=document.getElementById('o'+i+'b'); if(ob)ob.checked=true; updateState(i); }
-        else if(s.method==='self'){ SELF[i]={__done:true,__edited:(s.edited||[]).length}; (s.edited||[]).forEach(function(e){SELF[i][e.seq]={topic:e.topic,goal:e.goal,gear:e.gear,task:e.task,remark:e.remark};}); var oc=document.getElementById('o'+i+'c'); if(oc)oc.checked=true; updateState(i); }
+        else if(s.method==='self'){
+          // 전 주차를 원문으로 채운 뒤 저장된 편집분만 덮어쓴다(누락 주차 undefined 방지)
+          SELF[i]={};
+          (c.weeks||[]).forEach(function(w){SELF[i][w.seq]={topic:w.topic,goal:w.goal,gear:w.gear||'',task:w.task||'',remark:w.remark||''};});
+          var ec=0;
+          (s.edited||[]).forEach(function(e){
+            SELF[i][e.seq]={topic:e.topic,goal:e.goal,gear:e.gear,task:e.task,remark:e.remark};
+            var ow=(c.weeks||[]).filter(function(x){return String(x.seq)===String(e.seq);})[0];
+            if(ow&&(e.topic!==ow.topic||e.goal!==ow.goal||(e.gear||'')!==(ow.gear||'')||(e.task||'')!==(ow.task||'')||(e.remark||'')!==(ow.remark||'')))ec++;
+          });
+          SELF[i].__done=true; SELF[i].__edited=ec;
+          var oc=document.getElementById('o'+i+'c'); if(oc)oc.checked=true; updateState(i); }
         else { var oa=document.getElementById('o'+i+'a'); if(oa)oa.checked=true; }
       }
       var sv=document.getElementById('sv'+i); if(sv){sv.className='state done';sv.textContent='✔ 저장됨 ('+methodShort(s)+')';}

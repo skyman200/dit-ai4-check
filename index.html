@@ -14,7 +14,7 @@
 <meta property="og:url" content="https://skyman200.github.io/dit-ai4-check/">
 <meta name="twitter:card" content="summary_large_image">
 <style>
-:root{--navy:#1B2A4A;--navy2:#28406E;--orange:#C55A0E;--green:#1F7A57;--sub:#5C6B7B;--line:#D3DAE6;--ink:#232B37}
+:root{--navy:#1B2A4A;--navy2:#28406E;--orange:#C55A0E;--green:#1F7A57;--red:#B3261E;--sub:#5C6B7B;--line:#D3DAE6;--ink:#232B37;--ok:#E4F5EC;--wk:#FFF4E9;--ng:#FDECEA}
 *{box-sizing:border-box}
 body{font-family:'Pretendard','Apple SD Gothic Neo',-apple-system,sans-serif;margin:0;color:var(--ink);
 background:linear-gradient(180deg,#1B2A4A 0%,#0c162a 340px,#F7F9FC 340px,#F7F9FC 100%)}
@@ -23,14 +23,14 @@ background:linear-gradient(180deg,#1B2A4A 0%,#0c162a 340px,#F7F9FC 340px,#F7F9FC
 .hero h1{font-size:30px;margin:12px 0 4px;font-weight:800}
 .hero h1 .o{color:#E2731F}
 .hero p{color:#c9d3e4;font-size:14.5px;margin:8px 0 0;line-height:1.6}
-.wrap{max-width:900px;margin:0 auto;padding:0 16px 70px}
+.wrap{max-width:960px;margin:0 auto;padding:0 16px 90px}
 .card{background:#fff;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,.10);padding:20px 18px;margin-top:-8px}
 .steps{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:2px 0 16px}
 .chip{font-size:12.5px;color:var(--sub);background:#EEF2F8;border-radius:20px;padding:6px 12px}
 h2{color:var(--navy);font-size:16px;margin:8px 0 10px;padding-bottom:8px;border-bottom:2px solid var(--orange)}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
 a.dept{display:flex;flex-direction:column;gap:5px;padding:14px 16px;background:#fff;border:1px solid var(--line);
-border-radius:12px;text-decoration:none;color:var(--ink);transition:.12s}
+border-radius:12px;text-decoration:none;color:var(--ink);transition:.12s;cursor:pointer}
 a.dept:hover{border-color:var(--navy2);box-shadow:0 4px 14px rgba(0,0,0,.08);transform:translateY(-1px)}
 a.dept .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
 a.dept .nm{font-weight:700;font-size:15px}
@@ -40,6 +40,29 @@ a.dept .cnt{color:var(--sub);font-size:12.5px}
 .b-submit{background:#cfe0fb;color:#1b4fa0}
 .note{color:var(--sub);font-size:12px;line-height:1.7;margin-top:18px}
 .foot{text-align:center;color:#8a97a8;font-size:12px;margin-top:24px}
+/* ==== 학과 상세(정적 렌더) ==== */
+#detail{display:none}
+.back{display:inline-block;color:var(--navy2);font-size:13px;text-decoration:none;margin-bottom:6px;cursor:pointer}
+#detail h2.dt{border:0;font-size:20px;margin:2px 0 4px}
+.legend{font-size:12.5px;color:var(--sub);margin:8px 0 4px}
+.legend b.g{color:var(--green)} .legend b.o{color:var(--orange)} .legend b.r{color:var(--red)}
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;background:#fff;font-size:13.5px;margin-top:6px}
+th{background:var(--navy2);color:#fff;padding:8px 6px;font-weight:600}
+td{padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr.ok{background:var(--ok)} tr.wk{background:var(--wk)} tr.ng{background:var(--ng)} tr.co{background:#fff}
+.st{font-weight:700;font-size:11.5px;padding:2px 7px;border-radius:12px;white-space:nowrap}
+.s-ok{background:#c9ecd8;color:var(--green)} .s-wk{background:#ffe2c2;color:var(--orange)}
+.s-ng{background:#fbd5d0;color:var(--red)} .s-co{background:#e7ecf2;color:var(--sub)}
+a.fixlink{display:inline-block;margin-top:3px;font-size:12px;color:#1155CC;text-decoration:none;font-weight:600}
+a.fixlink:hover{text-decoration:underline}
+.sumbar{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.sumbar .pill{font-size:12.5px;font-weight:700;padding:6px 11px;border-radius:20px}
+.actbar{margin:18px 0 4px;padding:15px;background:#fff;border:2px solid var(--orange);border-radius:10px}
+.actbar p{margin:0 0 10px;font-size:13.5px;line-height:1.65}
+.btn{display:inline-block;background:var(--navy);color:#fff;border:0;padding:12px 22px;border-radius:10px;
+font-size:15px;font-weight:700;cursor:pointer;text-decoration:none}
+.btn.ghost{background:#EEF2F8;color:var(--navy);margin-left:8px}
 /* 인앱 브라우저 탈출 오버레이 */
 #iabWrap{position:fixed;inset:0;background:rgba(12,22,42,.93);z-index:9999;display:none;align-items:center;justify-content:center;padding:22px}
 #iabWrap .box{background:#fff;color:var(--ink);max-width:430px;width:100%;border-radius:16px;padding:22px 20px;box-shadow:0 20px 60px rgba(0,0,0,.45)}
@@ -49,231 +72,181 @@ a.dept .cnt{color:var(--sub);font-size:12.5px}
 #iabWrap .big{display:block;width:100%;margin-top:12px;padding:14px;border:0;border-radius:10px;background:var(--navy);color:#fff;font-size:15px;font-weight:700;cursor:pointer}
 #iabWrap .big.ghost{background:#EEF2F8;color:var(--navy)}
 #iabWrap .tip{background:#F7F9FC;border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:12px;font-size:13px;color:var(--ink);line-height:1.7}
-/* 로그인 충돌 도움말 */
-.help{margin:6px 0 16px;border:1px solid var(--line);border-radius:12px;background:#fff;overflow:hidden}
-.help summary{cursor:pointer;list-style:none;padding:13px 15px;font-weight:700;color:var(--navy);font-size:13.5px;background:#FFF6EC}
-.help summary::-webkit-details-marker{display:none}
-.help .hb{padding:12px 15px;font-size:13px;line-height:1.75;color:var(--ink)}
-.help .hb b{color:var(--orange)}
-.help ol{margin:8px 0 0;padding-left:20px}
-.help li{margin:4px 0}
 </style>
 </head>
 <body>
 <div class="hero">
   <div class="brand">동의과학대학교 · AID 사업 · 2026학년도 2학기</div>
   <h1>강의계획서 AI 4주 적용 <span class="o">학과 체크</span></h1>
-  <p>우리 학과 전 과목의 AI 적용 여부를 <b>클릭 한 번</b>으로 확인·확정하세요.<br>
-     이미 적용된 과목은 자동 체크, 나머지만 고르면 됩니다.</p>
+  <p>우리 학과 전 과목의 AI 적용 여부를 <b>클릭 한 번</b>으로 확인하세요.<br>
+     이 페이지에서 바로 열립니다 — 별도 로그인이 필요 없습니다.</p>
 </div>
 <div class="wrap">
-  <div class="card">
+  <!-- ===== 학과 목록 ===== -->
+  <div class="card" id="list">
     <div class="steps">
       <span class="chip">① 학과 선택</span>
-      <span class="chip">② 적용/불가 확정</span>
-      <span class="chip">③ 교무 수정 동의</span>
-      <span class="chip">④ 제출 → 결과받기 저장</span>
+      <span class="chip">② 과목별 적용 현황 확인</span>
+      <span class="chip">③ 개선안 PDF 열람</span>
+      <span class="chip">④ 필요 시 교무처 확정 제출</span>
     </div>
-    <details class="help" id="helpBox">
-      <summary>❗ 화면이 안 열리거나 ‘로그인’·‘현재 파일을 열 수 없습니다’가 뜨나요? — 눌러서 해결</summary>
-      <div class="hb">
-        구글 <b>다중 로그인</b>(학교 <b>dit.ac.kr</b> 계정 + 개인 계정) 충돌이 원인입니다. 아래 중 하나면 바로 열립니다.
-        <ol>
-          <li><b>시크릿/게스트 창</b>으로 이 페이지를 다시 열어 학과를 누르세요. <b>(가장 확실)</b></li>
-          <li>학교 <b>dit.ac.kr 계정에서 로그아웃</b>하거나, <b>개인 지메일</b>로만 로그인하세요.</li>
-          <li>카카오톡·네이버 등 <b>인앱 브라우저</b>면 메뉴에서 <b>Chrome/Safari로 열기</b>를 선택하세요.</li>
-        </ol>
-      </div>
-    </details>
-    <h2>학과 선택 (36개 · <span style="color:var(--green)">적용완료</span> 학과도 현황 확인 가능)</h2>
-    <div class="grid">
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=4800000" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">교양과</span><span class="badge b-todo">수정 32</span></div>
-        <span class="cnt">전체 32 · 완료 0 · 수정 필요 32</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=7010140" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">기계공학과</span><span class="badge b-todo">수정 14</span></div>
-        <span class="cnt">전체 63 · 완료 42 · 수정 필요 14</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=3100010" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">융합전기전자통신과</span><span class="badge b-todo">수정 14</span></div>
-        <span class="cnt">전체 27 · 완료 11 · 수정 필요 14</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2332014" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">호텔식음료서비스학과</span><span class="badge b-todo">수정 11</span></div>
-        <span class="cnt">전체 14 · 완료 1 · 수정 필요 11</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2710000" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">간호학과</span><span class="badge b-todo">수정 8</span></div>
-        <span class="cnt">전체 44 · 완료 28 · 수정 필요 8</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2565000" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">전기과</span><span class="badge b-todo">수정 8</span></div>
-        <span class="cnt">전체 40 · 완료 25 · 수정 필요 8</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2551300" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">화학공학과</span><span class="badge b-submit">제출완료</span></div>
-        <span class="cnt">전체 31 · 완료 20 · 수정 필요 7</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2543330" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">반도체전자산업과</span><span class="badge b-todo">수정 6</span></div>
-        <span class="cnt">전체 32 · 완료 20 · 수정 필요 6</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2133010" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">부동산풍수과</span><span class="badge b-submit">제출완료</span></div>
-        <span class="cnt">전체 22 · 완료 13 · 수정 필요 6</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2490000" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">응급구조과</span><span class="badge b-todo">수정 6</span></div>
-        <span class="cnt">전체 32 · 완료 22 · 수정 필요 6</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2153000" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">경찰경호행정과</span><span class="badge b-todo">수정 5</span></div>
-        <span class="cnt">전체 27 · 완료 20 · 수정 필요 5</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=3100020" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">스마트기계자동차과</span><span class="badge b-todo">수정 4</span></div>
-        <span class="cnt">전체 7 · 완료 3 · 수정 필요 4</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2570010" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">전기자동차과</span><span class="badge b-todo">수정 4</span></div>
-        <span class="cnt">전체 39 · 완료 29 · 수정 필요 4</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2171000" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">K-글로벌학부 K-Culture Contents과</span><span class="badge b-todo">수정 2</span></div>
-        <span class="cnt">전체 11 · 완료 6 · 수정 필요 2</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2134010" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">사회복지융합계열</span><span class="badge b-todo">수정 2</span></div>
-        <span class="cnt">전체 19 · 완료 13 · 수정 필요 2</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2330320" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">K-글로벌학부 K-Beauty과</span><span class="badge b-todo">수정 1</span></div>
-        <span class="cnt">전체 16 · 완료 12 · 수정 필요 1</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2383340" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">베이커리카페산업과</span><span class="badge b-todo">수정 1</span></div>
-        <span class="cnt">전체 13 · 완료 10 · 수정 필요 1</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2411000" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">보건행정과</span><span class="badge b-todo">수정 1</span></div>
-        <span class="cnt">전체 22 · 완료 17 · 수정 필요 1</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2123000" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">사회복지학과</span><span class="badge b-todo">수정 1</span></div>
-        <span class="cnt">전체 12 · 완료 11 · 수정 필요 1</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2551200" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">소방안전관리과</span><span class="badge b-todo">수정 1</span></div>
-        <span class="cnt">전체 17 · 완료 14 · 수정 필요 1</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2921210" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">소프트웨어융합과</span><span class="badge b-todo">수정 1</span></div>
-        <span class="cnt">전체 5 · 완료 3 · 수정 필요 1</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2135000" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">양조발효과</span><span class="badge b-todo">수정 1</span></div>
-        <span class="cnt">전체 19 · 완료 15 · 수정 필요 1</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2330200" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">의료피부미용과</span><span class="badge b-todo">수정 1</span></div>
-        <span class="cnt">전체 24 · 완료 20 · 수정 필요 1</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2921200" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">컴퓨터소프트웨어과</span><span class="badge b-submit">제출완료</span></div>
-        <span class="cnt">전체 6 · 완료 4 · 수정 필요 1</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2710020" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">K-글로벌학부 K-Care과</span><span class="badge b-done">적용완료</span></div>
-        <span class="cnt">전체 7 · 완료 7</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2330330" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">메이크업네일뷰티과</span><span class="badge b-submit">제출완료</span></div>
-        <span class="cnt">전체 8 · 완료 7</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=6910001" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">물리치료과</span><span class="badge b-done">적용완료</span></div>
-        <span class="cnt">전체 24 · 완료 21</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2440000" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">방사선과</span><span class="badge b-done">적용완료</span></div>
-        <span class="cnt">전체 23 · 완료 20</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2131100" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">부동산재테크정보과</span><span class="badge b-done">적용완료</span></div>
-        <span class="cnt">전체 13 · 완료 11</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2543340" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">스마트생산공정관리과</span><span class="badge b-done">적용완료</span></div>
-        <span class="cnt">전체 9 · 완료 9</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=6910050" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">스포츠재활트레이닝과</span><span class="badge b-done">적용완료</span></div>
-        <span class="cnt">전체 25 · 완료 23</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2381010" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">외식조리산업과</span><span class="badge b-done">적용완료</span></div>
-        <span class="cnt">전체 13 · 완료 11</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2110000" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">유아교육과</span><span class="badge b-done">적용완료</span></div>
-        <span class="cnt">전체 23 · 완료 19</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2420000" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">임상병리과</span><span class="badge b-done">적용완료</span></div>
-        <span class="cnt">전체 23 · 완료 19</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2431400" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">한방약재과</span><span class="badge b-done">적용완료</span></div>
-        <span class="cnt">전체 14 · 완료 12</span>
-      </a>
-      <a class="dept" href="https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec?dept=2330300" target="_blank" rel="noopener">
-        <div class="top"><span class="nm">헤어뷰티과</span><span class="badge b-done">적용완료</span></div>
-        <span class="cnt">전체 4 · 완료 3</span>
-      </a>
-    </div>
-    <p class="note">· <b style="color:#1b4fa0">제출완료</b> = 학과가 구글드라이브로 확정 제출 완료(‘결과받기’ 폴더 저장 확인).<br>
-       · <b style="color:var(--green)">적용완료</b> = 전 과목 AI 4주 이상 반영 완료(수정 불필요, 들어가면 현황 확인).<br>
-       · <b style="color:var(--orange)">수정 N</b> = AI 4주 미만 과목 N개(같은 폴더의 과목별 개선안 PDF 참고).<br>
+    <h2>학과 선택 (<span id="deptCount">36</span>개 · <span style="color:var(--green)">적용완료</span> 학과도 현황 확인 가능)</h2>
+    <div class="grid" id="grid"><p class="note" id="loadingMsg">불러오는 중…</p></div>
+    <p class="note">· <b style="color:var(--green)">적용완료</b> = 전 과목 AI 4주 이상 반영 완료(수정 불필요, 들어가면 현황 확인).<br>
+       · <b style="color:var(--orange)">수정 N</b> = AI 4주 미만 과목 N개(들어가면 과목별 개선안 PDF 확인).<br>
        · <b>적용 불가</b> = 현장실습·임상실습 등 교내 생성형 AI 적용이 어려운 과목입니다.<br>
-       · 제출하면 결과 PDF가 구글드라이브 ‘결과받기’ 폴더로 자동 저장됩니다. 판정 근거는 nds 실측 라이브 데이터입니다.</p>
+       · 판정 근거는 nds 실측 라이브 데이터입니다<span id="asOf"></span>.</p>
   </div>
+
+  <!-- ===== 학과 상세(클릭 시 이 페이지 안에서 렌더) ===== -->
+  <div class="card" id="detail">
+    <a class="back" id="backBtn">← 학과 목록</a>
+    <h2 class="dt" id="dName"></h2>
+    <p class="note" id="dSub"></p>
+    <p class="legend">범례:
+      <b class="g">■ 적용완료</b>(AI 4주+) · <b class="o">□ 적용대상</b>(수정 필요) ·
+      <b class="r">× 적용불가</b>(현장실습 등) · 학과공통</p>
+    <div class="sumbar" id="dSum"></div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>#</th><th>과목명</th><th>담당교수</th><th>AI주차</th><th>판정</th></tr></thead>
+        <tbody id="dRows"></tbody>
+      </table>
+    </div>
+    <div class="actbar">
+      <p>확인이 끝났으면, 교무처 확정 제출(결과 PDF 저장)이 필요할 때만 아래 버튼을 누르세요.
+         <b>확인만 하려면 누를 필요 없습니다.</b></p>
+      <a class="btn" id="submitLink" target="_blank" rel="noopener">교무처 확정 제출로 이동</a>
+      <a class="btn ghost" id="folderLink" target="_blank" rel="noopener">학과 개선안 폴더 열기</a>
+    </div>
+  </div>
+
   <div class="foot">문의: 교무처 / AID 사업 담당</div>
 </div>
+
+<!-- 인앱 브라우저 탈출 -->
 <div id="iabWrap"><div class="box">
   <h3>기본 브라우저로 열어 주세요</h3>
-  <p>카카오톡·네이버 등 <b>인앱 브라우저</b>에서는 구글 로그인 충돌로 강의계획서 화면이 열리지 않을 수 있어요.</p>
+  <p>카카오톡·네이버 등 <b>인앱 브라우저</b>에서는 일부 링크(구글 드라이브·확정 제출)가 열리지 않을 수 있어요.
+     학과 현황 <b>확인은 여기서 그대로</b> 가능합니다.</p>
   <button class="big" id="iabOpen">Chrome / 기본 브라우저로 열기</button>
   <button class="big ghost" id="iabCopy">링크 복사</button>
-  <div class="tip" id="iabTip">아이폰: 오른쪽 위·아래 <b>공유·⋯</b> → <b>Safari로 열기</b>. 그래도 로그인 요구가 뜨면 <b>시크릿/게스트 창</b>으로 열거나 학교(dit.ac.kr) 계정을 로그아웃하세요.</div>
-  <p style="text-align:center;margin:14px 0 0;font-size:12px">배경을 터치하면 이 안내를 닫습니다.</p>
+  <div class="tip">아이폰: 오른쪽 위·아래 <b>공유·⋯</b> → <b>Safari로 열기</b>. 배경을 터치하면 이 안내를 닫고 계속 확인할 수 있습니다.</div>
 </div></div>
+
 <script>
+var EXEC='https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec';
+var DATA=null, SUBMITTED={};
+
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function cntWeak(d){return d.courses.filter(function(c){return c.status==='적용대상';}).length;}
+function cntDone(d){return d.courses.filter(function(c){return c.status==='적용완료';}).length;}
+
+function renderList(){
+  var depts=DATA.depts.slice().sort(function(a,b){
+    var wa=cntWeak(a),wb=cntWeak(b);
+    if(wb!==wa)return wb-wa;
+    return a.name<b.name?-1:1;
+  });
+  var g=document.getElementById('grid');
+  g.innerHTML='';
+  depts.forEach(function(d){
+    var all=d.courses.length,wk=cntWeak(d),done=cntDone(d);
+    var badge;
+    if(SUBMITTED[d.name]) badge='<span class="badge b-submit">제출완료</span>';
+    else if(wk>0) badge='<span class="badge b-todo">수정 '+wk+'</span>';
+    else badge='<span class="badge b-done">적용완료</span>';
+    var cnt='전체 '+all+' · 완료 '+done+(wk>0?' · 수정 필요 '+wk:'');
+    var a=document.createElement('a');
+    a.className='dept'; a.href='#dept='+encodeURIComponent(d.dc);
+    a.setAttribute('data-dc',d.dc);
+    a.innerHTML='<div class="top"><span class="nm">'+esc(d.name)+'</span>'+badge+'</div><span class="cnt">'+esc(cnt)+'</span>';
+    a.addEventListener('click',function(e){e.preventDefault();location.hash='dept='+encodeURIComponent(d.dc);});
+    g.appendChild(a);
+  });
+  document.getElementById('deptCount').textContent=DATA.depts.length;
+  if(DATA.asOf) document.getElementById('asOf').textContent=' ('+DATA.asOf+' 기준)';
+}
+
+function renderDetail(dc){
+  var d=DATA.depts.filter(function(x){return String(x.dc)===String(dc);})[0];
+  if(!d){location.hash='';return;}
+  document.getElementById('list').style.display='none';
+  document.getElementById('detail').style.display='block';
+  document.getElementById('dName').textContent=d.name+' — AI 4주 적용 현황';
+  var all=d.courses.length,done=cntDone(d),wk=cntWeak(d),
+      ng=d.courses.filter(function(c){return c.status==='적용불가';}).length,
+      co=d.courses.filter(function(c){return c.status==='공통';}).length;
+  document.getElementById('dSub').innerHTML='전체 <b>'+all+'</b>과목 · 이미 적용된 과목은 <b style="color:var(--green)">적용완료</b>로 고정되어 있고, '
+    +'<b style="color:var(--orange)">적용대상</b> 과목은 개선안 PDF에서 실제 적용 방법을 확인할 수 있습니다.';
+  document.getElementById('dSum').innerHTML=
+    '<span class="pill s-ok">적용완료 '+done+'</span>'
+    +(wk?'<span class="pill s-wk">수정 필요 '+wk+'</span>':'')
+    +(ng?'<span class="pill s-ng">적용불가 '+ng+'</span>':'')
+    +(co?'<span class="pill s-co">학과공통 '+co+'</span>':'');
+  var rows='';
+  d.courses.forEach(function(c,i){
+    var cls=c.status==='적용완료'?'ok':(c.status==='적용대상'?'wk':(c.status==='적용불가'?'ng':'co'));
+    var scls=c.status==='적용완료'?'s-ok':(c.status==='적용대상'?'s-wk':(c.status==='적용불가'?'s-ng':'s-co'));
+    var stt=c.status==='공통'?'학과공통':c.status;
+    var ai=c.status==='공통'?'-':(c.ai+'주');
+    var fix=c.pdfUrl?'<br><a class="fixlink" href="'+esc(c.pdfUrl)+'" target="_blank" rel="noopener">📄 before→after 개선안 보기</a>':'';
+    rows+='<tr class="'+cls+'"><td>'+(i+1)+'</td><td>'+esc(c.name)+fix+'</td><td>'+esc(c.prof||'미지정')
+      +'</td><td style="text-align:center">'+esc(ai)+'</td><td><span class="st '+scls+'">'+esc(stt)+'</span></td></tr>';
+  });
+  document.getElementById('dRows').innerHTML=rows;
+  document.getElementById('submitLink').href=EXEC+'?dept='+encodeURIComponent(d.dc);
+  var fl=document.getElementById('folderLink');
+  if(d.folderId){fl.style.display='';fl.href='https://drive.google.com/drive/folders/'+d.folderId;}
+  else fl.style.display='none';
+  window.scrollTo(0,0);
+}
+
+function route(){
+  var m=/dept=([^&]+)/.exec(location.hash||'');
+  if(m&&DATA){renderDetail(decodeURIComponent(m[1]));}
+  else{document.getElementById('detail').style.display='none';document.getElementById('list').style.display='block';}
+}
+
+document.getElementById('backBtn').addEventListener('click',function(){location.hash='';});
+window.addEventListener('hashchange',route);
+
+Promise.all([
+  fetch('data.json?v='+Date.now()).then(function(r){return r.json();}),
+  fetch('submitted.json?v='+Date.now()).then(function(r){return r.ok?r.json():{submitted:[]};}).catch(function(){return {submitted:[]};})
+]).then(function(res){
+  DATA=res[0];
+  (res[1].submitted||[]).forEach(function(nm){SUBMITTED[nm]=1;});
+  renderList(); route();
+}).catch(function(){
+  document.getElementById('loadingMsg').textContent='데이터를 불러오지 못했습니다. 새로고침 해주세요.';
+});
+
+/* ===== 인앱 브라우저 감지 → 탈출 안내(확인은 그대로 가능하므로 배경 닫기 허용) ===== */
 (function(){
-  var ua = navigator.userAgent || '';
-  var isKakao = /KAKAOTALK/i.test(ua);
-  var inApp = isKakao || /NAVER|Instagram|FBAN|FBAV|FB_IAB|Line\/|Daum|; wv\)|everytimeApp|band/i.test(ua);
-  if(!inApp) return;
-  var isAndroid = /Android/i.test(ua);
-  var url = location.href;
+  var ua=navigator.userAgent||'';
+  var isKakao=/KAKAOTALK/i.test(ua);
+  var inApp=isKakao||/NAVER|Instagram|FBAN|FBAV|FB_IAB|Line\/|Daum|; wv\)|everytimeApp|band/i.test(ua);
+  if(!inApp)return;
+  var isAndroid=/Android/i.test(ua),url=location.href;
   function openExternal(){
-    if(isKakao){ location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(url); return; }
-    if(isAndroid){ location.href = 'intent://' + url.replace(/^https?:\/\//,'') + '#Intent;scheme=https;package=com.android.chrome;end'; return; }
+    if(isKakao){location.href='kakaotalk://web/openExternal?url='+encodeURIComponent(url);return;}
+    if(isAndroid){location.href='intent://'+url.replace(/^https?:\/\//,'')+'#Intent;scheme=https;package=com.android.chrome;end';return;}
   }
   function copyLink(){
-    var done=function(){ var b=document.getElementById('iabCopy'); if(b) b.textContent='✓ 복사됨 — 브라우저 주소창에 붙여넣기'; };
-    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(url).then(done, done); }
-    else { var t=document.createElement('textarea'); t.value=url; document.body.appendChild(t); t.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(t); done(); }
+    var done=function(){var b=document.getElementById('iabCopy');if(b)b.textContent='✓ 복사됨 — 브라우저 주소창에 붙여넣기';};
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(done,done);}
+    else{var t=document.createElement('textarea');t.value=url;document.body.appendChild(t);t.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(t);done();}
   }
   function mount(){
-    var w=document.getElementById('iabWrap'); if(!w) return;
+    var w=document.getElementById('iabWrap');if(!w)return;
     w.style.display='flex';
-    document.getElementById('iabOpen').addEventListener('click', openExternal);
-    document.getElementById('iabCopy').addEventListener('click', copyLink);
-    w.addEventListener('click', function(e){ if(e.target===w) w.style.display='none'; }); // 배경 탭 → 닫기(랜딩페이지만 보기)
-    if(isKakao) setTimeout(openExternal, 300); // 카카오톡은 외부 브라우저 자동 시도
+    document.getElementById('iabOpen').addEventListener('click',openExternal);
+    document.getElementById('iabCopy').addEventListener('click',copyLink);
+    w.addEventListener('click',function(e){if(e.target===w)w.style.display='none';});
+    if(isKakao)setTimeout(openExternal,300);
   }
-  if(document.body) mount(); else document.addEventListener('DOMContentLoaded', mount);
+  if(document.body)mount();else document.addEventListener('DOMContentLoaded',mount);
 })();
 </script>
 </body>

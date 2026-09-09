@@ -40,16 +40,16 @@ jobs:
           # 원격 목록만 확인(토큰 미출력)
           rclone listremotes
 
-      - name: 배지 갱신
+      - name: 제출완료 목록 갱신(submitted.json)
         run: python3 scripts/update_badges.py
 
       - name: 변경 시 커밋·푸시
         run: |
-          if [[ -n "$(git status --porcelain index.html)" ]]; then
+          if [[ -n "$(git status --porcelain submitted.json)" ]]; then
             git config user.name  "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add index.html
-            git commit -m "자동: 구글드라이브 제출완료 배지 갱신 [skip ci]"
+            git add submitted.json
+            git commit -m "자동: 구글드라이브 제출완료 목록 갱신 [skip ci]"
             git push
           else
             echo "변경 없음 — 커밋 생략"

@@ -81,7 +81,7 @@ a.dept:hover{border-color:#28406E;box-shadow:0 4px 14px rgba(0,0,0,.08)}
 a.dept .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
 a.dept .nm{font-weight:700;font-size:15px} a.dept .cnt{color:#5C6B7B;font-size:12.5px}
 .lbadge{font-weight:700;font-size:11px;padding:3px 9px;border-radius:12px;white-space:nowrap}
-.lb-done{background:#c9ecd8;color:#1F7A57} .lb-todo{background:#ffe2c2;color:#C55A0E}
+.lb-done{background:#c9ecd8;color:#1F7A57} .lb-todo{background:#ffe2c2;color:#C55A0E} .lb-submit{background:#cfe0fb;color:#1b4fa0}
 .lnote{color:#5C6B7B;font-size:12px;line-height:1.7;margin-top:14px}
 #detailWrap{display:none}
 
@@ -343,6 +343,7 @@ function doSubmit(){
     .then(function(res){
       stopProgress(true);
       if(res && res.ok){
+        try{ var arr=JSON.parse(localStorage.getItem('aid_submitted')||'[]'); if(arr.indexOf(DEPT.name)<0)arr.push(DEPT.name); localStorage.setItem('aid_submitted',JSON.stringify(arr)); SUBMITTED[DEPT.name]=1; }catch(e){}
         msg.className='ok-msg';
         msg.innerHTML='\u2705 \uc81c\ucd9c \uc644\ub8cc! AI \uc801\uc6a9 '+res.apply+'\uacfc\ubaa9 \u00b7 \uc801\uc6a9 \ubd88\uac00 '+res.deny+'\uacfc\ubaa9.<br>\ud655\uc815 \uacb0\uacfc PDF\uac00 \uacb0\uacfc\ubc1b\uae30 \ud3f4\ub354\uc5d0 \uc800\uc7a5\ub418\uc5c8\uc2b5\ub2c8\ub2e4'+(res.copied?(' (\uac1c\uc120\uc548 PDF '+res.copied+'\uac74 \ud3ec\ud568)'):'')+'.<br>\u2192 <a href="'+res.folderUrl+'" target="_blank">\uacb0\uacfc\ubc1b\uae30/'+DEPT.name+' \ud3f4\ub354 \uc5f4\uae30</a>';
       } else {
@@ -359,7 +360,7 @@ function doSubmit(){
 
 /* ===== 랜딩(학과 목록) + 라우팅 + 정적 데이터 로딩 ===== */
 var EXEC='https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec';
-var INDEX=null;
+var INDEX=null, SUBMITTED={};
 function _esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function _weak(d){return d.courses.filter(function(c){return c.status==='적용대상';}).length;}
 function _done(d){return d.courses.filter(function(c){return c.status==='적용완료';}).length;}
@@ -368,7 +369,10 @@ function renderList(){
   var g=document.getElementById('grid');g.innerHTML='';
   depts.forEach(function(d){
     var all=d.courses.length,wk=_weak(d),dn=_done(d);
-    var badge=wk>0?'<span class="lbadge lb-todo">수정 '+wk+'</span>':'<span class="lbadge lb-done">적용완료</span>';
+    var badge;
+    if(SUBMITTED[d.name]) badge='<span class="lbadge lb-submit">제출완료</span>';
+    else if(wk>0) badge='<span class="lbadge lb-todo">수정 '+wk+'</span>';
+    else badge='<span class="lbadge lb-done">적용완료</span>';
     var a=document.createElement('a');a.className='dept';a.href='#dept='+encodeURIComponent(d.dc);
     a.innerHTML='<div class="top"><span class="nm">'+_esc(d.name)+'</span>'+badge+'</div><span class="cnt">전체 '+all+' · 완료 '+dn+(wk>0?(' · 수정 필요 '+wk):'')+'</span>';
     a.addEventListener('click',function(e){e.preventDefault();location.hash='dept='+encodeURIComponent(d.dc);});
@@ -386,7 +390,16 @@ function loadDept(dc){
 function route(){var m=/dept=([^&]+)/.exec(location.hash||'');if(m&&INDEX){loadDept(decodeURIComponent(m[1]));}else{showList();}}
 window.addEventListener('hashchange',route);
 document.getElementById('backBtn')&&document.getElementById('backBtn').addEventListener('click',function(e){e.preventDefault();location.hash='';});
-fetch('data/index.json?v='+Date.now()).then(function(r){return r.json();}).then(function(d){INDEX=d;renderList();route();}).catch(function(){document.getElementById('loadingMsg').textContent='데이터를 불러오지 못했습니다.';});
+Promise.all([
+  fetch('data/index.json?v='+Date.now()).then(function(r){return r.json();}),
+  fetch('submitted.json?v='+Date.now()).then(function(r){return r.ok?r.json():{submitted:[]};}).catch(function(){return {submitted:[]};})
+]).then(function(res){
+  INDEX=res[0];
+  (res[1].submitted||[]).forEach(function(nm){SUBMITTED[nm]=1;});
+  // 이번 브라우저에서 방금 제출한 학과도 즉시 제출완료로(cron 갱신 전까지)
+  try{ (JSON.parse(localStorage.getItem('aid_submitted')||'[]')).forEach(function(nm){SUBMITTED[nm]=1;}); }catch(e){}
+  renderList(); route();
+}).catch(function(){document.getElementById('loadingMsg').textContent='데이터를 불러오지 못했습니다.';});
 
 </script>
 </body>

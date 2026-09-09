@@ -472,8 +472,14 @@ function doSubmit(){
   }
   startProgress();
   document.getElementById('submitBtn').disabled=true;
-  fetch(EXEC,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({dc:DC,agree:true,selections:selections})})
-    .then(function(r){return r.json();})
+  var _body=JSON.stringify({dc:DC,agree:true,selections:selections});
+  function _doFetch(retry){
+    var ctrl=new AbortController(); var tid=setTimeout(function(){ctrl.abort();},60000);
+    return fetch(EXEC,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:_body,signal:ctrl.signal})
+      .then(function(r){clearTimeout(tid);return r.json();})
+      .catch(function(err){clearTimeout(tid);if(retry>0)return _doFetch(retry-1);throw err;});
+  }
+  _doFetch(1)
     .then(function(res){
       stopProgress(true);
       if(res && res.ok){

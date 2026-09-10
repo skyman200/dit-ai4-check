@@ -1,23 +1,37 @@
 {
  "submitted": [
   "간호학과",
+  "경찰경호행정과",
+  "기계공학과",
   "메이크업네일뷰티과",
+  "베이커리카페산업과",
   "보건행정과",
   "부동산풍수과",
   "사회복지학과",
   "소방안전관리과",
+  "스마트기계자동차과",
+  "양조발효과",
   "유아교육과",
   "융합전기전자통신과",
   "응급구조과",
   "전기과",
   "컴퓨터소프트웨어과",
   "테스트 물리치료과",
+  "호텔식음료서비스학과",
   "화학공학과"
  ],
  "folders": {
   "간호학과": {
    "url": "https://drive.google.com/drive/folders/1Z7BwfyasuwowG8gBJq1-Nohgvq4Cz63R",
-   "madeAt": "20260909_2049"
+   "madeAt": "20260910_1728"
+  },
+  "경찰경호행정과": {
+   "url": "https://drive.google.com/drive/folders/1TWE7YXvaF8GoHhD4Cn0ADuRaQHYIFkF9",
+   "madeAt": "20260910_1755"
+  },
+  "기계공학과": {
+   "url": "https://drive.google.com/drive/folders/1GEGwD5sYCabY1ssZ5nTkrmNrjnIwsUWB",
+   "madeAt": "20260910_1624"
   },
   "메이크업네일뷰티과": {
    "url": "https://drive.google.com/drive/folders/12Kq8ULpgK4PWqWs_a8npjaEP2BR1-Rb_",
@@ -26,6 +40,10 @@
   "물리치료과": {
    "url": "https://drive.google.com/drive/folders/1M3u8SMDFZHVnZBIO2B-qIiDFI59wadZW",
    "madeAt": ""
+  },
+  "베이커리카페산업과": {
+   "url": "https://drive.google.com/drive/folders/1TWTMN4HeqBTdapNnJzHaHNJnjECPf-YM",
+   "madeAt": "20260910_1643"
   },
   "보건행정과": {
    "url": "https://drive.google.com/drive/folders/1TBh7zc7F3hz2NcyMohXzZsqcRTpJ12jT",
@@ -42,6 +60,14 @@
   "소방안전관리과": {
    "url": "https://drive.google.com/drive/folders/1IuvICplcK1uvOf7mqVB7kXn_iAsVRMeJ",
    "madeAt": "20260910_1542"
+  },
+  "스마트기계자동차과": {
+   "url": "https://drive.google.com/drive/folders/1c_2C7xWDjOWcppTy0IsRxC1tEQjoRg70",
+   "madeAt": "20260910_1638"
+  },
+  "양조발효과": {
+   "url": "https://drive.google.com/drive/folders/1D90Iat1ftaNktr2eXS2SjbVGBzcJltut",
+   "madeAt": "20260910_1643"
   },
   "유아교육과": {
    "url": "https://drive.google.com/drive/folders/1VL5Ou8k5rYnWQo_HUVLQQnWi7L7ksWpS",
@@ -65,7 +91,11 @@
   },
   "테스트 물리치료과": {
    "url": "https://drive.google.com/drive/folders/1Fu6cLrKp-ppXm466CKBsCSkvHcSlX-zI",
-   "madeAt": "20260910_1551"
+   "madeAt": "20260910_1621"
+  },
+  "호텔식음료서비스학과": {
+   "url": "https://drive.google.com/drive/folders/1fdmXDSk99wOY48EZN-wU3iTCT_icRXRQ",
+   "madeAt": "20260910_1645"
   },
   "화학공학과": {
    "url": "https://drive.google.com/drive/folders/1Mm6sX5HbDjRRX6eCDegsqnHQxcOysy2t",
@@ -74,11 +104,11 @@
  },
  "progress": {
   "스마트기계자동차과": {
-   "done": 0,
+   "done": 4,
    "need": 4
   },
   "간호학과": {
-   "done": 0,
+   "done": 8,
    "need": 8
   },
   "부동산풍수과": {
@@ -86,11 +116,11 @@
    "need": 5
   },
   "경찰경호행정과": {
-   "done": 0,
+   "done": 1,
    "need": 5
   },
   "호텔식음료서비스학과": {
-   "done": 0,
+   "done": 11,
    "need": 11
   },
   "융합전기전자통신과": {
@@ -110,7 +140,7 @@
    "need": 2
   },
   "양조발효과": {
-   "done": 0,
+   "done": 1,
    "need": 1
   },
   "보건행정과": {
@@ -126,7 +156,7 @@
    "need": 3
   },
   "베이커리카페산업과": {
-   "done": 0,
+   "done": 1,
    "need": 1
   },
   "교양과": {
@@ -134,7 +164,7 @@
    "need": 32
   },
   "기계공학과": {
-   "done": 0,
+   "done": 12,
    "need": 12
   },
   "컴퓨터소프트웨어과": {

@@ -120,7 +120,7 @@ a.dept .nm{font-weight:700;font-size:15px} a.dept .cnt{color:#5C6B7B;font-size:1
   <div class="lcard">
     <h2 class="lh">학과 선택 (<span id="deptCount">36</span>개)</h2>
     <div class="grid" id="grid"><p class="lnote" id="loadingMsg">불러오는 중…</p></div>
-    <p class="lnote">· <b style="color:#1F7A57">적용완료</b> = 전 과목 AI 4주 이상 반영 · <b style="color:#C55A0E">수정 N</b> = AI 4주 미만 과목 N개. 판정 근거는 nds 강의계획서 실측 데이터<span id="asOf"></span>. <span style="color:#9aa7b8">· 화면 빌드 2026-09-10h</span></p>
+    <p class="lnote">· <b style="color:#1F7A57">적용완료</b> = 전 과목 AI 4주 이상 반영 · <b style="color:#C55A0E">수정 N</b> = AI 4주 미만 과목 N개. 판정 근거는 nds 강의계획서 실측 데이터<span id="asOf"></span>. <span style="color:#9aa7b8">· 화면 빌드 2026-09-10i</span></p>
   </div>
 </div>
 <div id="detailWrap">
@@ -169,7 +169,7 @@ a.dept .nm{font-weight:700;font-size:15px} a.dept .cnt{color:#5C6B7B;font-size:1
 
 var DEPT = null;
 var DC=null;
-var BUILD='2026-09-10h';   // version.json 의 build 와 다르면 자동 새로고침(배포 후 구버전 화면 방지)
+var BUILD='2026-09-10i';   // version.json 의 build 와 다르면 자동 새로고침(배포 후 구버전 화면 방지)
 var LAST_MADE='';
 var _stage={floor:0,cap:0,expect:10,st:0};   // 진행 오버레이 단계 상태
 var FOLDERS={};   // submitted.json 의 결과폴더 지도(학과명 → {url, madeAt})
@@ -556,12 +556,8 @@ function doSubmit(){
   var _minStamp=_kstStamp(Date.now()-3*60000);
   var _body=JSON.stringify({dc:DC,agree:true,selections:selections,deferPdfs:true});
   var _post=function(bodyStr,timeoutMs){
-    var opts={method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:bodyStr}, tid=null;
-    if(typeof AbortController!=='undefined'){ var ctrl=new AbortController(); opts.signal=ctrl.signal; tid=setTimeout(function(){ctrl.abort();},timeoutMs||150000); }
-    return fetch(EXEC,opts)
-      .then(function(r){ if(tid)clearTimeout(tid); return r.text(); })
-      .then(function(txt){ try{ return JSON.parse(txt); }catch(e){ var er=new Error('bad-json'); er.raw=String(txt).replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').slice(0,100); throw er; } })
-      .catch(function(err){ if(tid)clearTimeout(tid); throw err; });
+    return httpReq('POST',EXEC,bodyStr,timeoutMs||150000)
+      .then(function(r){ try{ return JSON.parse(r.text); }catch(e){ var er=new Error('bad-json'); er.raw=String(r.text).replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').slice(0,100); throw er; } });
   };
   // 1단계: 제출 기록 + 확정 PDF (과목별 PDF 는 2단계에서 최대 3건씩 동시에 생성)
   var _phase1=function(){
@@ -669,13 +665,23 @@ function _checkSubmitted(minStamp){
 }
 /* GET 방식 API(ping/status/warm) — fetch 실패 시 <script> JSONP 로 자동 폴백(웹뷰·차단 환경 대응) */
 var RESULT_ROOT_URL='https://drive.google.com/drive/folders/1YJIrI6URXYZc8M-gZDBANZg_V2p4UXPK';
+function httpReq(method,url,body,timeoutMs){
+  return new Promise(function(res,rej){
+    try{
+      var x=new XMLHttpRequest(); x.open(method,url,true); x.timeout=timeoutMs||30000;
+      if(body!=null) x.setRequestHeader('Content-Type','text/plain;charset=utf-8');
+      x.onload=function(){ res({status:x.status,text:x.responseText}); };
+      x.onerror=function(){ rej(new TypeError('Failed to fetch')); };
+      x.ontimeout=function(){ var e=new Error('timeout'); e.name='AbortError'; rej(e); };
+      x.send(body==null?null:body);
+    }catch(e){ rej(e); }
+  });
+}
 function apiGet(params,timeoutMs){
   var qs=Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&');
   var url=EXEC+'?'+qs+'&_='+Date.now();
-  var opts={method:'GET',cache:'no-store',redirect:'follow'}, tid=null;
-  if(typeof AbortController!=='undefined'){ var c=new AbortController(); opts.signal=c.signal; tid=setTimeout(function(){c.abort();},timeoutMs||30000); }
-  return fetch(url,opts).then(function(r){ if(tid)clearTimeout(tid); return r.json(); })
-    .catch(function(err){ if(tid)clearTimeout(tid); return jsonp(url,timeoutMs||30000).catch(function(){ throw err; }); });
+  return httpReq('GET',url,null,timeoutMs||30000).then(function(r){ return JSON.parse(r.text); })
+    .catch(function(err){ return jsonp(url,timeoutMs||30000).catch(function(){ throw err; }); });
 }
 var _jsonpN=0;
 function jsonp(url,timeoutMs){

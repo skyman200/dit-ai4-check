@@ -30,6 +30,7 @@ table.list th{background:var(--navy2);color:#fff;padding:9px 6px;font-weight:600
 table.list td{padding:9px 6px;border-bottom:1px solid var(--line);vertical-align:top}
 tr.ok{background:#E4F5EC} tr.wk{background:var(--wk)} tr.co{background:#fff}
 .nm{font-weight:600} .mini{font-size:11px;color:var(--sub)}
+.subst{color:#1F7A57;font-weight:600;margin-top:2px} .subst:empty{display:none}
 .badge{font-weight:700;font-size:11.5px;padding:2px 7px;border-radius:12px;white-space:nowrap}
 .b-ok{background:#c9ecd8;color:var(--green)} .b-wk{background:#ffe2c2;color:var(--orange)}
 .b-ng{background:#fbd5d0;color:var(--red)} .b-todo{background:#e7ecf2;color:var(--sub)} .b-co{background:#e7ecf2;color:var(--sub)}
@@ -119,7 +120,7 @@ a.dept .nm{font-weight:700;font-size:15px} a.dept .cnt{color:#5C6B7B;font-size:1
   <div class="lcard">
     <h2 class="lh">학과 선택 (<span id="deptCount">36</span>개)</h2>
     <div class="grid" id="grid"><p class="lnote" id="loadingMsg">불러오는 중…</p></div>
-    <p class="lnote">· <b style="color:#1F7A57">적용완료</b> = 전 과목 AI 4주 이상 반영 · <b style="color:#C55A0E">수정 N</b> = AI 4주 미만 과목 N개. 판정 근거는 nds 강의계획서 실측 데이터<span id="asOf"></span>. <span style="color:#9aa7b8">· 화면 빌드 2026-09-10f</span></p>
+    <p class="lnote">· <b style="color:#1F7A57">적용완료</b> = 전 과목 AI 4주 이상 반영 · <b style="color:#C55A0E">수정 N</b> = AI 4주 미만 과목 N개. 판정 근거는 nds 강의계획서 실측 데이터<span id="asOf"></span>. <span style="color:#9aa7b8">· 화면 빌드 2026-09-10g</span></p>
   </div>
 </div>
 <div id="detailWrap">
@@ -168,10 +169,12 @@ a.dept .nm{font-weight:700;font-size:15px} a.dept .cnt{color:#5C6B7B;font-size:1
 
 var DEPT = null;
 var DC=null;
-var BUILD='2026-09-10f';   // version.json 의 build 와 다르면 자동 새로고침(배포 후 구버전 화면 방지)
+var BUILD='2026-09-10g';   // version.json 의 build 와 다르면 자동 새로고침(배포 후 구버전 화면 방지)
 var LAST_MADE='';
 var _stage={floor:0,cap:0,expect:10,st:0};   // 진행 오버레이 단계 상태
 var FOLDERS={};   // submitted.json 의 결과폴더 지도(학과명 → {url, madeAt})
+var PROGRESS={};  // submitted.json 의 학과별 제출 진행(학과명 → {done, need})
+var RECORDS={};   // 현재 학과의 과목별 제출 기록(과목명 → {verdict, method, label, madeAt})
 var CH={}, CONFIRMED={}, SELF={}, SAVED={};
 
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
@@ -186,18 +189,20 @@ function initDept(){
   var h=document.getElementById('dHead'); if(h) h.textContent=DEPT.name+' — AI 4주 적용 체크';
   var cn=document.getElementById('dCnt'); if(cn) cn.textContent='전체 '+DEPT.courses.length+'과목.';
   document.getElementById('agree').checked=false; var mm=document.getElementById('msg'); if(mm) mm.textContent='';
-  renderDoneBanner();
+  renderDoneBanner(null);
   checkServer();
   warmDept();
   render();
+  fetchStatus();
   restoreDraft();
   updateSubmitBar();
 }
-function renderDoneBanner(){
+function renderDoneBanner(st){
   var el=document.getElementById('doneBanner'); if(!el) return;
-  if(!SUBMITTED[DEPT.name]){ el.style.display='none'; el.innerHTML=''; return; }
+  var has=SUBMITTED[DEPT.name]||(st&&st.submitted);
+  if(!has){ el.style.display='none'; el.innerHTML=''; return; }
   el.style.display='block';
-  el.innerHTML='<b style="color:#1F7A57">✔ 이미 제출완료된 학과입니다.</b> 결과 폴더에서 확정 내용을 확인하거나, 수정 후 다시 제출할 수 있습니다.'
+  el.innerHTML='<b style="color:#1F7A57">✔ 이 학과는 제출 기록이 있습니다.</b> 과목별로 각자 제출해도 됩니다. 본인 과목만 저장·제출하면 그 과목만 갱신되고, 다른 선생님이 제출한 과목은 그대로 유지됩니다.'
     +'<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
     +'<span id="dbFolderWrap"></span>'
     +'<button type="button" class="btn sm ghost" id="dbHow">🔎 어떻게 수정했는지 보기</button>'
@@ -206,23 +211,48 @@ function renderDoneBanner(){
   var known=knownFolder();
   renderFolderBtn(known?known.url:null, known?'':'loading');
   if(known&&known.madeAt) LAST_MADE=String(known.madeAt);
-  var info=document.getElementById('dbInfo');
-  if(info&&known&&known.madeAt) info.textContent='마지막 제출: '+fmtStamp(known.madeAt);
-  // 서버 상태 조회(GET, 실패 시 JSONP) — 정적 지도가 있어도 최신 제출 시각 확인
-  apiGet({api:'status',dc:DEPT.dc,name:DEPT.name},30000).then(function(st){
-    if(st&&st.ok&&st.folderUrl){ saveFolder(st.folderUrl, st.madeAt||''); renderFolderBtn(st.folderUrl,''); }
-    else if(!known){ renderFolderBtn(null,'fallback'); }
-    if(st&&st.madeAt){ LAST_MADE=String(st.madeAt); if(info) info.textContent='마지막 제출: '+fmtStamp(st.madeAt); }
-  }).catch(function(){ if(!known) renderFolderBtn(null,'fallback'); });
+  updateDbInfo(st);
   document.getElementById('dbHow').addEventListener('click',function(){
     var h=document.getElementById('dbHint'); h.style.display='block';
-    h.innerHTML='제출 시 반영 내역과 확정 강의계획서는 결과 폴더의 PDF(00_★확정, NN_과목명)에서 확인할 수 있습니다. 이 화면에서 과목별 선택을 바꾼 뒤 다시 제출하면 최신본으로 교체됩니다.';
+    h.innerHTML='각 과목 아래 <b>제출됨</b> 표시가 그 과목의 현재 제출 내용입니다. 상세 내용과 확정 강의계획서는 결과 폴더의 PDF(00_★확정, 번호_과목명)에서 확인할 수 있습니다. 과목 선택을 바꾼 뒤 다시 제출하면 그 과목만 최신본으로 교체됩니다.';
   });
   document.getElementById('dbRedo').addEventListener('click',function(){
     var h=document.getElementById('dbHint'); h.style.display='block';
     var n=Object.keys(SAVED).length;
-    h.innerHTML='<b>아래 과목 목록에서 수정한 뒤 맨 아래 [제출]을 누르세요.</b>'+(n?(' 이 브라우저에 저장된 '+n+'과목 선택이 이미 채워져 있습니다.'):'')+' 다시 제출하면 이전 확정본은 자동으로 지워지고 <b>마지막 제출본만</b> 결과 폴더에 남습니다.';
+    h.innerHTML='<b>아래에서 본인 과목을 고른 뒤 [이 과목 저장] → 맨 아래 [제출]을 누르세요.</b>'+(n?(' 이 브라우저에 저장된 '+n+'과목 선택이 이미 채워져 있습니다.'):'')+' 제출한 과목만 갱신되고, 다른 과목의 기존 제출 내용은 유지됩니다.';
     var first=document.querySelector('table.list tbody tr'); if(first&&first.scrollIntoView) first.scrollIntoView({behavior:'smooth',block:'start'});
+  });
+}
+function updateDbInfo(st){
+  var info=document.getElementById('dbInfo'); if(!info) return;
+  var made=(st&&st.madeAt)||LAST_MADE||'';
+  var need=0, done=0;
+  DEPT.courses.forEach(function(c){ if(c.status!=='적용대상') return; need++; if(RECORDS[c.name]) done++; });
+  var pg=PROGRESS[DEPT.name];
+  if(!Object.keys(RECORDS).length && pg){ need=pg.need||need; done=pg.done||0; }
+  info.textContent=(made?('마지막 제출: '+fmtStamp(made)+' · '):'')+'제출 현황: 적용대상 '+need+'과목 중 '+done+'과목 제출됨';
+}
+/* 서버 상태 조회(GET, 실패 시 JSONP): 결과 폴더·마지막 제출·과목별 제출 기록 */
+function fetchStatus(){
+  var dc=DEPT.dc;
+  apiGet({api:'status',dc:dc,name:DEPT.name},30000).then(function(st){
+    if(!DEPT||DEPT.dc!==dc||!st||!st.ok) return;
+    if(st.submitted&&!SUBMITTED[DEPT.name]){ SUBMITTED[DEPT.name]=1; renderDoneBanner(st); }
+    if(st.folderUrl){ saveFolder(st.folderUrl, st.madeAt||''); renderFolderBtn(st.folderUrl,''); }
+    else if(document.getElementById('dbFolderWrap')&&!knownFolder()){ renderFolderBtn(null,'fallback'); }
+    if(st.madeAt) LAST_MADE=String(st.madeAt);
+    RECORDS=st.courses||{};
+    applyRecords();
+    updateDbInfo(st);
+  }).catch(function(){ if(document.getElementById('dbFolderWrap')&&!knownFolder()) renderFolderBtn(null,'fallback'); });
+}
+/* 과목별 '제출됨' 표시 */
+function applyRecords(){
+  DEPT.courses.forEach(function(c,i){
+    var el=document.getElementById('sub'+i); if(!el) return;
+    var r=RECORDS[c.name];
+    if(!r||c.status!=='적용대상'){ el.textContent=''; return; }
+    el.textContent='✔ 제출됨 · '+fmtStamp(r.madeAt)+(r.label?(' · '+r.label):'');
   });
 }
 function fmtStamp(s){ return String(s||'').replace(/(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})/,'$1-$2-$3 $4:$5'); }
@@ -258,7 +288,7 @@ function render(){
     else if(st==='적용불가'){ judge='<span class="badge b-ng">적용불가</span>'; sel='<span class="mini">현장실습 등 — 적용 불가로 분류됨</span>'; }
     else { judge='<span class="badge b-todo" id="bd'+i+'">미선택</span><div class="mini">현재 AI '+c.ai+'주</div>'; sel=verdictBox(i,c); }
     tr.innerHTML='<td>'+seq+'</td>'
-      +'<td><div class="nm">'+esc(c.name)+'</div><div class="mini">'+esc(c.prof||'미지정')+(c.weeks?(' · 전체 '+c.weeks.length+'주'):'')+'</div></td>'
+      +'<td><div class="nm">'+esc(c.name)+'</div><div class="mini">'+esc(c.prof||'미지정')+(c.weeks?(' · 전체 '+c.weeks.length+'주'):'')+'</div><div class="mini subst" id="sub'+i+'"></div></td>'
       +'<td style="text-align:center">'+judge+'</td><td>'+sel+'</td>';
     tb.appendChild(tr);
   });
@@ -521,7 +551,7 @@ function doSubmit(){
   var appliedCnt=selections.filter(function(s){return s.verdict==='적용'||s.verdict==='적용불가';}).length;
   if(appliedCnt===0){ msg.className='err-msg'; msg.textContent='※ 저장된 과목이 없습니다. 각 과목에서 [💾 이 과목 저장]을 먼저 눌러 주세요.'; return; }
   if(unsaved.length){
-    if(!confirm('아직 저장하지 않은 과목 '+unsaved.length+'개('+unsaved.join(', ')+')는 이번 제출에서 제외됩니다.\n저장한 과목만 먼저 제출할까요? (나머지는 나중에 저장 후 다시 제출)')) return;
+    if(!confirm('아직 저장하지 않은 과목 '+unsaved.length+'개('+unsaved.join(', ')+')는 이번 제출에 포함되지 않습니다.\n저장한 과목만 제출할까요?\n(다른 선생님이 제출한 과목은 그대로 유지되고, 나머지 과목은 나중에 저장 후 제출하면 됩니다)')) return;
   }
   var _minStamp=_kstStamp(Date.now()-3*60000);
   var _body=JSON.stringify({dc:DC,agree:true,selections:selections,deferPdfs:true});
@@ -541,15 +571,17 @@ function doSubmit(){
       return _checkSubmitted(_minStamp).then(function(st){ if(st){ st.recovered=true; return st; } return _post(_body,150000); });
     });
   };
-  var _pendingLocal=function(){ var out=[],i=0; selections.forEach(function(s){ if(s.verdict==='적용'){ i++; out.push({idx:i,name:s.name}); } }); return out; };
+  var _pendingLocal=function(){ var out=[]; selections.forEach(function(s){ if(s.verdict!=='적용') return; var ci=-1; for(var k=0;k<DEPT.courses.length;k++){ if(DEPT.courses[k].name===s.name){ ci=k; break; } } if(ci>=0) out.push({idx:ci+1,name:s.name}); }); return out; };
   var _onOk=function(res,note){
     stopProgress(true);
     try{ var arr=JSON.parse(localStorage.getItem('aid_submitted')||'[]'); if(arr.indexOf(DEPT.name)<0)arr.push(DEPT.name); localStorage.setItem('aid_submitted',JSON.stringify(arr)); SUBMITTED[DEPT.name]=1; }catch(e){}
     if(res.stamp) LAST_MADE=String(res.stamp); else if(res.madeAt) LAST_MADE=String(res.madeAt);
     if(res.folderUrl){ saveFolder(res.folderUrl, LAST_MADE); }
-    try{ renderDoneBanner(); }catch(e){}
+    selections.forEach(function(s){ if(s.verdict==='적용'||s.verdict==='적용불가') RECORDS[s.name]={verdict:s.verdict,method:s.method,label:(s.verdict==='적용불가')?'적용불가':(s.method==='fix'?'①개선안':s.method==='weeks'?('②주차선택('+(s.weeks||[]).join('·')+'주)'):'③본인편집'),madeAt:LAST_MADE}; });
+    try{ renderDoneBanner(res); applyRecords(); updateDbInfo(res); fetchStatus(); }catch(e){}
     msg.className='ok-msg';
-    var head=(res.apply!=null)?('제출 완료! AI 적용 '+res.apply+'과목 · 적용 불가 '+res.deny+'과목.'):'제출 완료!';
+    var head=(res.thisCount!=null)?('제출 완료! 이번에 제출한 '+res.thisCount+'과목이 반영되었습니다. 학과 누적: 적용대상 '+res.need+'과목 중 '+res.recorded+'과목 제출됨 (AI 적용 '+res.apply+' · 적용 불가 '+res.deny+').')
+      :(res.apply!=null)?('제출 완료! AI 적용 '+res.apply+'과목 · 적용 불가 '+res.deny+'과목.'):'제출 완료!';
     msg.innerHTML='✅ '+head+(note?('<br><span class="mini">'+esc(note)+'</span>'):'')
       +'<br>확정 결과 PDF가 결과받기 폴더에 저장되었습니다'+(res.copied?(' (과목별 강의계획서 PDF '+res.copied+'건 포함)'):'')+'.'
       +'<br>→ <a href="'+esc(res.folderUrl||'')+'" target="_blank" rel="noopener">결과받기/'+esc(DEPT.name)+' 폴더 열기</a>';
@@ -688,7 +720,9 @@ function renderList(){
   depts.forEach(function(d){
     var all=d.courses.length,wk=_weak(d),dn=_done(d);
     var badge;
-    if(SUBMITTED[d.name]) badge='<span class="lbadge lb-submit">제출완료</span>';
+    var pg=PROGRESS[d.name];
+    if(pg&&pg.need>0&&pg.done>0&&pg.done<pg.need) badge='<span class="lbadge lb-submit">제출 '+pg.done+'/'+pg.need+'</span>';
+    else if(SUBMITTED[d.name]) badge='<span class="lbadge lb-submit">제출완료</span>';
     else if(wk>0) badge='<span class="lbadge lb-todo">수정 '+wk+'</span>';
     else badge='<span class="lbadge lb-done">적용완료</span>';
     var a=document.createElement('a');a.className='dept';a.href='#dept='+encodeURIComponent(d.dc);
@@ -717,6 +751,7 @@ Promise.all([
   INDEX=res[0];
   (res[1].submitted||[]).forEach(function(nm){SUBMITTED[nm]=1;});
   FOLDERS=res[1].folders||{};
+  PROGRESS=res[1].progress||{};
   // 이번 브라우저에서 방금 제출한 학과도 즉시 제출완료로(cron 갱신 전까지)
   try{ (JSON.parse(localStorage.getItem('aid_submitted')||'[]')).forEach(function(nm){SUBMITTED[nm]=1;}); }catch(e){}
   renderList(); route();

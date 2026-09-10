@@ -61,11 +61,48 @@ def submitted_departments() -> tuple[list[str], dict]:
     return sorted(depts), folders
 
 
+DEPT_DATA_FOLDER_ID = os.environ.get("AID_DEPT_DATA_FOLDER_ID", "1r0QylZKNLHNRfCKoAuUnWyPWKmFHxzKL")
+
+
+def submission_progress() -> dict:
+    """학과별 과목 제출 진행 {학과명: {done, need}} — 서버의 과목별 제출 기록(_ai4_sel_<dc>.json)과 정적 데이터 대조."""
+    import tempfile
+    progress: dict[str, dict] = {}
+    try:
+        idx = json.loads(Path("data/index.json").read_text(encoding="utf-8"))
+    except Exception as e:
+        print(f"index.json 읽기 실패(무시): {e}", file=sys.stderr)
+        return progress
+    tmp = Path(tempfile.mkdtemp())
+    try:
+        subprocess.run(["rclone", "copy", "--drive-root-folder-id", DEPT_DATA_FOLDER_ID, "gdrive:", str(tmp),
+                        "--include", "_ai4_sel_*.json"], check=True, capture_output=True, text=True)
+    except Exception as e:
+        print(f"제출 기록 복사 실패(무시): {e}", file=sys.stderr)
+        return progress
+    for d in idx.get("depts", []):
+        dc, name = d.get("dc"), unicodedata.normalize("NFC", d.get("name", ""))
+        need = sum(1 for c in d.get("courses", []) if c.get("status") == "적용대상")
+        f = tmp / f"_ai4_sel_{dc}.json"
+        done = 0
+        if f.exists():
+            try:
+                rec = json.loads(f.read_text(encoding="utf-8"))
+                targets = {unicodedata.normalize("NFC", c["name"]) for c in d.get("courses", []) if c.get("status") == "적용대상"}
+                done = sum(1 for k in (rec.get("courses") or {}) if unicodedata.normalize("NFC", k) in targets)
+            except Exception:
+                done = 0
+        if need or done:
+            progress[name] = {"done": done, "need": need}
+    return progress
+
+
 def main() -> int:
     depts, folders = submitted_departments()
     # 러너는 UTC → 한국 날짜(KST)로 표기
     kst_today = datetime.now(timezone(timedelta(hours=9))).date()
-    payload = {"submitted": depts, "folders": folders, "asOf": kst_today.isoformat()}
+    progress = submission_progress()
+    payload = {"submitted": depts, "folders": folders, "progress": progress, "asOf": kst_today.isoformat()}
     new = json.dumps(payload, ensure_ascii=False, indent=1)
 
     old = OUT.read_text(encoding="utf-8") if OUT.exists() else ""

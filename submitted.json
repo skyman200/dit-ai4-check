@@ -2,8 +2,14 @@
  "submitted": [
   "간호학과",
   "메이크업네일뷰티과",
+  "보건행정과",
   "부동산풍수과",
+  "사회복지학과",
+  "소방안전관리과",
   "유아교육과",
+  "융합전기전자통신과",
+  "응급구조과",
+  "전기과",
   "컴퓨터소프트웨어과",
   "테스트 물리치료과",
   "화학공학과"
@@ -21,13 +27,37 @@
    "url": "https://drive.google.com/drive/folders/1M3u8SMDFZHVnZBIO2B-qIiDFI59wadZW",
    "madeAt": ""
   },
+  "보건행정과": {
+   "url": "https://drive.google.com/drive/folders/1TBh7zc7F3hz2NcyMohXzZsqcRTpJ12jT",
+   "madeAt": "20260910_1547"
+  },
   "부동산풍수과": {
    "url": "https://drive.google.com/drive/folders/1vptTTuiN56o5PhoRj6uRZm4_o4HAzB-o",
    "madeAt": "20260907_1141"
   },
+  "사회복지학과": {
+   "url": "https://drive.google.com/drive/folders/1n7pR0R1E18Q62R4zdMxZHNZVtoQMe12v",
+   "madeAt": "20260910_1539"
+  },
+  "소방안전관리과": {
+   "url": "https://drive.google.com/drive/folders/1IuvICplcK1uvOf7mqVB7kXn_iAsVRMeJ",
+   "madeAt": "20260910_1542"
+  },
   "유아교육과": {
    "url": "https://drive.google.com/drive/folders/1VL5Ou8k5rYnWQo_HUVLQQnWi7L7ksWpS",
    "madeAt": "20260909_1546"
+  },
+  "융합전기전자통신과": {
+   "url": "https://drive.google.com/drive/folders/1FRnYiThrgEI3NwWsBQEpUX8SBovTrDUE",
+   "madeAt": "20260910_1538"
+  },
+  "응급구조과": {
+   "url": "https://drive.google.com/drive/folders/1D1NHSm-2zVnoVcDX32uUrgvLtH9bhGIv",
+   "madeAt": "20260910_1535"
+  },
+  "전기과": {
+   "url": "https://drive.google.com/drive/folders/1XHWQQD39Yen9LYVLPyJi_-cJWML5OgeE",
+   "madeAt": "20260910_1539"
   },
   "컴퓨터소프트웨어과": {
    "url": "https://drive.google.com/drive/folders/1r-zMOKXUDipY5zU6hKQBcgwQ67FFSeoe",
@@ -35,11 +65,109 @@
   },
   "테스트 물리치료과": {
    "url": "https://drive.google.com/drive/folders/1Fu6cLrKp-ppXm466CKBsCSkvHcSlX-zI",
-   "madeAt": "20260910_1127"
+   "madeAt": "20260910_1551"
   },
   "화학공학과": {
    "url": "https://drive.google.com/drive/folders/1Mm6sX5HbDjRRX6eCDegsqnHQxcOysy2t",
    "madeAt": "20260908_1307"
+  }
+ },
+ "progress": {
+  "스마트기계자동차과": {
+   "done": 0,
+   "need": 4
+  },
+  "간호학과": {
+   "done": 0,
+   "need": 8
+  },
+  "부동산풍수과": {
+   "done": 5,
+   "need": 5
+  },
+  "경찰경호행정과": {
+   "done": 0,
+   "need": 5
+  },
+  "호텔식음료서비스학과": {
+   "done": 0,
+   "need": 11
+  },
+  "융합전기전자통신과": {
+   "done": 0,
+   "need": 14
+  },
+  "사회복지융합계열": {
+   "done": 0,
+   "need": 1
+  },
+  "K-글로벌학부 K-Beauty과": {
+   "done": 0,
+   "need": 1
+  },
+  "K-글로벌학부 K-Culture Contents과": {
+   "done": 0,
+   "need": 2
+  },
+  "양조발효과": {
+   "done": 0,
+   "need": 1
+  },
+  "보건행정과": {
+   "done": 0,
+   "need": 1
+  },
+  "소방안전관리과": {
+   "done": 0,
+   "need": 1
+  },
+  "전기자동차과": {
+   "done": 0,
+   "need": 3
+  },
+  "베이커리카페산업과": {
+   "done": 0,
+   "need": 1
+  },
+  "교양과": {
+   "done": 0,
+   "need": 32
+  },
+  "기계공학과": {
+   "done": 0,
+   "need": 12
+  },
+  "컴퓨터소프트웨어과": {
+   "done": 1,
+   "need": 1
+  },
+  "전기과": {
+   "done": 0,
+   "need": 6
+  },
+  "사회복지학과": {
+   "done": 0,
+   "need": 1
+  },
+  "응급구조과": {
+   "done": 0,
+   "need": 6
+  },
+  "반도체전자산업과": {
+   "done": 0,
+   "need": 5
+  },
+  "화학공학과": {
+   "done": 3,
+   "need": 5
+  },
+  "소프트웨어융합과": {
+   "done": 0,
+   "need": 1
+  },
+  "테스트 물리치료과": {
+   "done": 3,
+   "need": 3
   }
  },
  "asOf": "2026-09-10"

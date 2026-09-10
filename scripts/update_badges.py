@@ -13,8 +13,10 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
+import unicodedata
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -23,28 +25,47 @@ CONFIRM_MARKER = "_AI적용_확정_"
 OUT = Path(os.environ.get("AID_SUBMITTED", "submitted.json"))
 
 
-def submitted_departments() -> list[str]:
-    """확정 마커가 존재하는 학과 폴더명 목록(정렬)."""
+def submitted_departments() -> tuple[list[str], dict]:
+    """확정 마커가 존재하는 학과 폴더명 목록(정렬) + 학과별 결과폴더 지도 {학과명: {url, madeAt}}."""
     out = subprocess.run(
         ["rclone", "lsf", REMOTE, "-R", "--files-only", "--format", "p"],
         check=True, capture_output=True, text=True,
     ).stdout
     depts: set[str] = set()
+    made: dict[str, str] = {}
     for line in out.splitlines():
         line = line.strip()
         if CONFIRM_MARKER not in line or "/" not in line:
             continue
         dept = line.split("/", 1)[0].strip()
-        if dept:
-            depts.add(dept)
-    return sorted(depts)
+        if not dept:
+            continue
+        depts.add(dept)
+        m = re.search(r"(\d{8}_\d{4})", line)
+        if m and m.group(1) > made.get(dept, ""):
+            made[dept] = m.group(1)
+    # 학과 폴더 ID → 공개 URL (웹앱에서 서버 조회 없이 즉시 '결과 폴더 열기' 링크 표시용)
+    folders: dict[str, dict] = {}
+    try:
+        lst = subprocess.run(
+            ["rclone", "lsjson", REMOTE, "--dirs-only"],
+            check=True, capture_output=True, text=True,
+        ).stdout
+        for d in json.loads(lst or "[]"):
+            name = unicodedata.normalize("NFC", d.get("Name", "")).strip()
+            fid = d.get("ID")
+            if name and fid:
+                folders[name] = {"url": f"https://drive.google.com/drive/folders/{fid}", "madeAt": made.get(name, "")}
+    except Exception as e:  # 폴더 지도는 부가 정보 — 실패해도 배지 갱신은 진행
+        print(f"폴더 지도 생성 실패(무시): {e}", file=sys.stderr)
+    return sorted(depts), folders
 
 
 def main() -> int:
-    depts = submitted_departments()
+    depts, folders = submitted_departments()
     # 러너는 UTC → 한국 날짜(KST)로 표기
     kst_today = datetime.now(timezone(timedelta(hours=9))).date()
-    payload = {"submitted": depts, "asOf": kst_today.isoformat()}
+    payload = {"submitted": depts, "folders": folders, "asOf": kst_today.isoformat()}
     new = json.dumps(payload, ensure_ascii=False, indent=1)
 
     old = OUT.read_text(encoding="utf-8") if OUT.exists() else ""

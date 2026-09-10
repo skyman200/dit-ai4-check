@@ -8,5 +8,39 @@
   "테스트 물리치료과",
   "화학공학과"
  ],
+ "folders": {
+  "간호학과": {
+   "url": "https://drive.google.com/drive/folders/1Z7BwfyasuwowG8gBJq1-Nohgvq4Cz63R",
+   "madeAt": "20260909_2049"
+  },
+  "메이크업네일뷰티과": {
+   "url": "https://drive.google.com/drive/folders/12Kq8ULpgK4PWqWs_a8npjaEP2BR1-Rb_",
+   "madeAt": "20260907_1206"
+  },
+  "물리치료과": {
+   "url": "https://drive.google.com/drive/folders/1M3u8SMDFZHVnZBIO2B-qIiDFI59wadZW",
+   "madeAt": ""
+  },
+  "부동산풍수과": {
+   "url": "https://drive.google.com/drive/folders/1vptTTuiN56o5PhoRj6uRZm4_o4HAzB-o",
+   "madeAt": "20260907_1141"
+  },
+  "유아교육과": {
+   "url": "https://drive.google.com/drive/folders/1VL5Ou8k5rYnWQo_HUVLQQnWi7L7ksWpS",
+   "madeAt": "20260909_1546"
+  },
+  "컴퓨터소프트웨어과": {
+   "url": "https://drive.google.com/drive/folders/1r-zMOKXUDipY5zU6hKQBcgwQ67FFSeoe",
+   "madeAt": "20260907_1223"
+  },
+  "테스트 물리치료과": {
+   "url": "https://drive.google.com/drive/folders/1Fu6cLrKp-ppXm466CKBsCSkvHcSlX-zI",
+   "madeAt": "20260910_0806"
+  },
+  "화학공학과": {
+   "url": "https://drive.google.com/drive/folders/1Mm6sX5HbDjRRX6eCDegsqnHQxcOysy2t",
+   "madeAt": "20260908_1307"
+  }
+ },
  "asOf": "2026-09-10"
 }

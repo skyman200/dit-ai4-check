@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <title>강의계획서 AI 4주 적용 — 학과 온라인 체크</title>
 <meta name="description" content="동의과학대학교 AID 사업 · 우리 학과 전 과목의 AI 적용 여부를 클릭 한 번으로 확인·확정하세요.">
 <meta property="og:type" content="website">
@@ -53,7 +53,8 @@ a.btn{display:inline-block;text-decoration:none;line-height:1.25}
 #msg{margin-top:8px;font-size:13px;text-align:left;white-space:pre-wrap} .ok-msg{color:var(--green)} .err-msg{color:var(--red)}
 #overlay{display:none;position:fixed;inset:0;background:rgba(12,22,42,.55);z-index:30;justify-content:center;align-items:center}
 #modal{display:none;position:fixed;inset:0;background:rgba(12,22,42,.6);z-index:20;align-items:flex-start;justify-content:center;padding:24px}
-#modal .box{background:#fff;max-width:1040px;width:100%;max-height:90vh;overflow:auto;border-radius:14px;padding:20px 22px}
+#modal .box{background:#fff;max-width:1040px;width:100%;max-height:90vh;overflow:auto;border-radius:14px;padding:20px 22px;min-width:0}
+#modalBody{max-width:100%}
 #modal h3{margin:0 0 2px;color:var(--navy)} #modal .close{float:right;cursor:pointer;color:var(--sub);font-size:24px;line-height:1}
 table.syl{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;table-layout:fixed}
 table.syl th{background:var(--navy2);color:#fff;padding:6px 5px}
@@ -81,7 +82,10 @@ col.c-no{width:6%} col.c-topic{width:22%} col.c-goal{width:34%} col.c-gear{width
   table.list td:first-child{display:none}
   table.list td:nth-child(3){text-align:left!important;display:flex;gap:8px;align-items:center;margin-bottom:4px}
   .verdict{min-width:0}
-  #modal{padding:6px} #modal .box{padding:12px 10px;max-height:96vh;border-radius:8px} .modalbar{bottom:-12px}
+  #modal{padding:6px} #modal .box{padding:12px 10px;max-height:96vh;border-radius:8px;overflow-x:hidden} .modalbar{bottom:-12px}
+  #modalBody{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -2px}
+  #modalBody table.syl{min-width:600px} #modalBody .ba{display:block} #modalBody .ba>div{margin-bottom:14px}
+  .mscroll{font-size:11.5px;color:#C55A0E;margin:0 0 6px}
   .bar{padding:10px 10px} .btn{font-size:15px;padding:12px 16px}
 }
 
@@ -115,7 +119,7 @@ a.dept .nm{font-weight:700;font-size:15px} a.dept .cnt{color:#5C6B7B;font-size:1
   <div class="lcard">
     <h2 class="lh">학과 선택 (<span id="deptCount">36</span>개)</h2>
     <div class="grid" id="grid"><p class="lnote" id="loadingMsg">불러오는 중…</p></div>
-    <p class="lnote">· <b style="color:#1F7A57">적용완료</b> = 전 과목 AI 4주 이상 반영 · <b style="color:#C55A0E">수정 N</b> = AI 4주 미만 과목 N개. 판정 근거는 nds 강의계획서 실측 데이터<span id="asOf"></span>. <span style="color:#9aa7b8">· 화면 빌드 2026-09-10b</span></p>
+    <p class="lnote">· <b style="color:#1F7A57">적용완료</b> = 전 과목 AI 4주 이상 반영 · <b style="color:#C55A0E">수정 N</b> = AI 4주 미만 과목 N개. 판정 근거는 nds 강의계획서 실측 데이터<span id="asOf"></span>. <span style="color:#9aa7b8">· 화면 빌드 2026-09-10c</span></p>
   </div>
 </div>
 <div id="detailWrap">
@@ -165,6 +169,7 @@ a.dept .nm{font-weight:700;font-size:15px} a.dept .cnt{color:#5C6B7B;font-size:1
 var DEPT = null;
 var DC=null;
 var LAST_MADE='';
+var FOLDERS={};   // submitted.json 의 결과폴더 지도(학과명 → {url, madeAt})
 var CH={}, CONFIRMED={}, SELF={}, SAVED={};
 
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
@@ -181,47 +186,56 @@ function initDept(){
   document.getElementById('agree').checked=false; var mm=document.getElementById('msg'); if(mm) mm.textContent='';
   renderDoneBanner();
   checkServer();
+  warmDept();
   render();
   restoreDraft();
   updateSubmitBar();
 }
 function renderDoneBanner(){
   var el=document.getElementById('doneBanner'); if(!el) return;
-  el.style.display='none'; el.innerHTML='';
-  if(!SUBMITTED[DEPT.name]) return;
+  if(!SUBMITTED[DEPT.name]){ el.style.display='none'; el.innerHTML=''; return; }
   el.style.display='block';
-  el.innerHTML='<b style="color:#1b4fa0">✔ 이미 제출완료된 학과입니다.</b> 결과 폴더에서 확정 내용을 확인하거나, 수정 후 다시 제출할 수 있습니다.'
-    +'<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">'
-    +'<button class="btn sm" id="dbFolder" type="button">📁 결과 폴더 열기</button>'
-    +'<button class="btn sm ghost" id="dbDetail">🔎 어떻게 수정했는지 보기</button>'
-    +'<button class="btn sm ghost" id="dbResubmit">✏️ 수정 후 다시 제출</button>'
-    +'</div><div id="dbInfo" style="margin-top:8px;font-size:12.5px;color:#5C6B7B"></div>';
-  // 제출 상태(폴더 URL/시각) 조회
-  fetch(EXEC,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'status',dc:DEPT.dc})})
-    .then(function(r){return r.json();}).then(function(st){
-      if(st&&st.folderUrl){ window.__folderUrl=st.folderUrl;
-        var fb=document.getElementById('dbFolder');
-        if(fb&&fb.tagName!=='A'){ var fa=document.createElement('a'); fa.className='btn sm'; fa.id='dbFolder'; fa.href=st.folderUrl; fa.target='_blank'; fa.rel='noopener'; fa.textContent=fb.textContent; fb.parentNode.replaceChild(fa,fb); }
-      }
-      if(st&&st.madeAt) LAST_MADE=String(st.madeAt);
-      var info=document.getElementById('dbInfo');
-      if(info&&st&&st.madeAt){ info.textContent='마지막 제출: '+st.madeAt.replace(/(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})/,'$1-$2-$3 $4:$5'); }
-    }).catch(function(){});
-  document.getElementById('dbFolder').addEventListener('click',function(e){
-    e.preventDefault();
-    var info=document.getElementById('dbInfo');
-    if(window.__folderUrl){ window.open(window.__folderUrl,'_blank','noopener'); }
-    else if(info){ info.innerHTML='<b style="color:#C55A0E">결과 폴더 주소를 불러오는 중입니다. 잠시 후 다시 눌러 주세요.</b>'; }
+  el.innerHTML='<b style="color:#1F7A57">✔ 이미 제출완료된 학과입니다.</b> 결과 폴더에서 확정 내용을 확인하거나, 수정 후 다시 제출할 수 있습니다.'
+    +'<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
+    +'<span id="dbFolderWrap"></span>'
+    +'<button type="button" class="btn sm ghost" id="dbHow">🔎 어떻게 수정했는지 보기</button>'
+    +'<button type="button" class="btn sm ghost" id="dbRedo">✏️ 수정 후 다시 제출</button>'
+    +'</div><div id="dbInfo" class="mini" style="margin-top:6px"></div><div id="dbHint" class="mini" style="margin-top:6px;display:none;color:#C55A0E"></div>';
+  var known=knownFolder();
+  renderFolderBtn(known?known.url:null, known?'':'loading');
+  if(known&&known.madeAt) LAST_MADE=String(known.madeAt);
+  var info=document.getElementById('dbInfo');
+  if(info&&known&&known.madeAt) info.textContent='마지막 제출: '+fmtStamp(known.madeAt);
+  // 서버 상태 조회(GET, 실패 시 JSONP) — 정적 지도가 있어도 최신 제출 시각 확인
+  apiGet({api:'status',dc:DEPT.dc,name:DEPT.name},30000).then(function(st){
+    if(st&&st.ok&&st.folderUrl){ saveFolder(st.folderUrl, st.madeAt||''); renderFolderBtn(st.folderUrl,''); }
+    else if(!known){ renderFolderBtn(null,'fallback'); }
+    if(st&&st.madeAt){ LAST_MADE=String(st.madeAt); if(info) info.textContent='마지막 제출: '+fmtStamp(st.madeAt); }
+  }).catch(function(){ if(!known) renderFolderBtn(null,'fallback'); });
+  document.getElementById('dbHow').addEventListener('click',function(){
+    var h=document.getElementById('dbHint'); h.style.display='block';
+    h.innerHTML='제출 시 반영 내역과 확정 강의계획서는 결과 폴더의 PDF(00_★확정, NN_과목명)에서 확인할 수 있습니다. 이 화면에서 과목별 선택을 바꾼 뒤 다시 제출하면 최신본으로 교체됩니다.';
   });
-  document.getElementById('dbDetail').addEventListener('click',function(){
-    // 수정내역 = 현재 화면에서 각 과목 선택 상태를 기반으로 안내(재제출 전이면 지난 제출은 폴더 PDF 참고)
-    var info=document.getElementById('dbInfo');
-    info.innerHTML='지난 제출의 상세 반영 내용은 <b>결과 폴더의 확정 PDF</b>에서 확인하세요(과목별 적용방법·주차 포함). 아래 목록에서 수정 후 다시 제출하면 최신본만 남습니다.';
+  document.getElementById('dbRedo').addEventListener('click',function(){
+    var h=document.getElementById('dbHint'); h.style.display='block';
+    var n=Object.keys(SAVED).length;
+    h.innerHTML='<b>아래 과목 목록에서 수정한 뒤 맨 아래 [제출]을 누르세요.</b>'+(n?(' 이 브라우저에 저장된 '+n+'과목 선택이 이미 채워져 있습니다.'):'')+' 다시 제출하면 이전 확정본은 자동으로 지워지고 <b>마지막 제출본만</b> 결과 폴더에 남습니다.';
+    var first=document.querySelector('table.list tbody tr'); if(first&&first.scrollIntoView) first.scrollIntoView({behavior:'smooth',block:'start'});
   });
-  document.getElementById('dbResubmit').addEventListener('click',function(){
-    document.getElementById('doneBanner').scrollIntoView({behavior:'smooth'});
-    var info=document.getElementById('dbInfo'); info.innerHTML='<b style="color:#C55A0E">아래 과목 목록에서 수정한 뒤 맨 아래 [제출]을 누르세요.</b> 다시 제출하면 이전 확정본은 자동으로 지워지고 <b>마지막 제출본만</b> 결과 폴더에 남습니다.';
-  });
+}
+function fmtStamp(s){ return String(s||'').replace(/(\d{4})(\d{2})(\d{2})_(\d{2})(\d{2})/,'$1-$2-$3 $4:$5'); }
+function knownFolder(){
+  var f=FOLDERS[DEPT.name]; if(f&&f.url) return f;
+  try{ var j=JSON.parse(localStorage.getItem('aid_folder_'+DEPT.dc)||'null'); if(j&&j.url) return j; }catch(e){}
+  return null;
+}
+function saveFolder(url,madeAt){ try{ localStorage.setItem('aid_folder_'+DEPT.dc,JSON.stringify({url:url,madeAt:madeAt||''})); }catch(e){} window.__folderUrl=url; }
+/* 결과 폴더 버튼: url 있으면 실제 링크(a), 없으면 상태(loading/fallback) */
+function renderFolderBtn(url,state){
+  var w=document.getElementById('dbFolderWrap'); if(!w) return;
+  if(url){ w.innerHTML='<a class="btn sm" id="dbFolder" href="'+esc(url)+'" target="_blank" rel="noopener">📁 결과 폴더 열기</a>'; return; }
+  if(state==='loading'){ w.innerHTML='<button type="button" class="btn sm" id="dbFolder" disabled>📁 결과 폴더 주소 확인 중…</button>'; return; }
+  w.innerHTML='<a class="btn sm" id="dbFolder" href="'+RESULT_ROOT_URL+'" target="_blank" rel="noopener">📁 결과받기 폴더 열기</a><span class="mini"> (폴더 목록에서 우리 학과를 누르세요)</span>';
 }
 
 function _sortKey(st){ return st==='적용대상'?0:(st==='적용불가'?1:(st==='공통'?2:3)); } // 미선택(적용대상) 먼저, 적용완료 맨 뒤
@@ -317,7 +331,7 @@ function showWeeks(i){var c=DEPT.courses[i];
   });
   var html='<h3>'+esc(c.name)+' — 주차별 선택 체크</h3>'
    +'<div class="mini"><b>체크한 주차에 AI 적용 내용이 자동 반영</b>됩니다(학습주제 [AI 연계]·목표 ※AI 활용·비고 AIDX). 해제하면 원문으로 돌아갑니다.</div>'
-   +'<div style="margin:8px 0"><button class="pill" onclick="allWk('+i+',true)">전체 선택</button>'
+   +'<div class="mscroll">휴대폰에서는 표를 좌우로 밀어 보세요.</div><div style="margin:8px 0"><button class="pill" onclick="allWk('+i+',true)">전체 선택</button>'
    +'<button class="pill" onclick="allWk('+i+',false)">전체 해제</button><button class="pill" onclick="rec4('+i+')">권장 4주만</button></div>'
    +'<table class="syl">'+sylHeadChk(true)+'<tbody>'+rows+'</tbody></table>'
    +'<div class="modalbar"><span class="mini" id="wkcnt" style="margin-right:12px"></span>'
@@ -516,6 +530,8 @@ function doSubmit(){
     stopProgress(true);
     try{ var arr=JSON.parse(localStorage.getItem('aid_submitted')||'[]'); if(arr.indexOf(DEPT.name)<0)arr.push(DEPT.name); localStorage.setItem('aid_submitted',JSON.stringify(arr)); SUBMITTED[DEPT.name]=1; }catch(e){}
     if(res.stamp) LAST_MADE=String(res.stamp); else if(res.madeAt) LAST_MADE=String(res.madeAt);
+    if(res.folderUrl){ saveFolder(res.folderUrl, LAST_MADE); }
+    try{ renderDoneBanner(); }catch(e){}
     msg.className='ok-msg';
     var head=(res.apply!=null)?('제출 완료! AI 적용 '+res.apply+'과목 · 적용 불가 '+res.deny+'과목.'):'제출 완료!';
     msg.innerHTML='✅ '+head+(note?('<br><span class="mini">'+esc(note)+'</span>'):'')
@@ -568,25 +584,49 @@ function _kstStamp(t){ // 'yyyyMMdd_HHmm' (Asia/Seoul) — 서버 stamp 와 동�
   return m[1]+m[2]+m[3]+'_'+m[4]+m[5];
 }
 function _checkSubmitted(minStamp){
-  return fetch(EXEC,{method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'status',dc:DC})})
-    .then(function(r){return r.json();})
+  return apiGet({api:'status',dc:DC,name:DEPT.name},40000)
     .then(function(st){ var made=st&&st.ok&&st.submitted?String(st.madeAt||''):''; return (made && made>=minStamp && made!==LAST_MADE)?st:null; })
     .catch(function(){return null;});
 }
+/* GET 방식 API(ping/status/warm) — fetch 실패 시 <script> JSONP 로 자동 폴백(웹뷰·차단 환경 대응) */
+var RESULT_ROOT_URL='https://drive.google.com/drive/folders/1YJIrI6URXYZc8M-gZDBANZg_V2p4UXPK';
+function apiGet(params,timeoutMs){
+  var qs=Object.keys(params).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(params[k]);}).join('&');
+  var url=EXEC+'?'+qs+'&_='+Date.now();
+  var opts={method:'GET',cache:'no-store',redirect:'follow'}, tid=null;
+  if(typeof AbortController!=='undefined'){ var c=new AbortController(); opts.signal=c.signal; tid=setTimeout(function(){c.abort();},timeoutMs||30000); }
+  return fetch(url,opts).then(function(r){ if(tid)clearTimeout(tid); return r.json(); })
+    .catch(function(err){ if(tid)clearTimeout(tid); return jsonp(url,timeoutMs||30000).catch(function(){ throw err; }); });
+}
+var _jsonpN=0;
+function jsonp(url,timeoutMs){
+  return new Promise(function(res,rej){
+    var name='__aidcb'+(++_jsonpN), s=document.createElement('script'), done=false;
+    var tid=setTimeout(function(){ if(!done){ done=true; cleanup(); rej(new Error('jsonp timeout')); } },timeoutMs||30000);
+    function cleanup(){ try{ delete window[name]; }catch(e){ window[name]=undefined; } if(s.parentNode) s.parentNode.removeChild(s); clearTimeout(tid); }
+    window[name]=function(d){ if(!done){ done=true; cleanup(); res(d); } };
+    s.onerror=function(){ if(!done){ done=true; cleanup(); rej(new Error('jsonp load error')); } };
+    s.src=url+'&callback='+name; document.body.appendChild(s);
+  });
+}
+/* 학과 데이터 서버 캐시 예열(백그라운드) — 이후 제출·상태 조회가 빨라짐 */
+function warmDept(){ try{ apiGet({api:'warm',dc:DEPT.dc},60000).catch(function(){}); }catch(e){} }
 /* 학과 화면 진입 시 제출 서버(구글) 연결 사전 점검 — 실패해도 선택·저장은 가능, 경고만 표시 */
 function checkServer(){
   var el=document.getElementById('netWarn'); if(!el) return;
   el.style.display='none'; el.innerHTML='';
-  var opts={method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'ping'})};
-  if(typeof AbortController!=='undefined'){ var c=new AbortController(); opts.signal=c.signal; setTimeout(function(){c.abort();},20000); }
-  fetch(EXEC,opts).then(function(r){return r.json();}).then(function(j){ if(!(j&&j.ok)) throw new Error('bad'); })
-    .catch(function(err){
-      el.style.display='block';
-      el.innerHTML='<b>제출 서버(구글) 연결 확인 실패</b> — 과목 선택·저장은 되지만 <b>제출이 안 될 수 있습니다.</b> '
-        +'학교·기관 네트워크 차단이나 보안 프로그램·광고차단 확장이 원인일 수 있으니, 휴대폰 데이터(LTE/5G)나 다른 브라우저(크롬·엣지·사파리)로 이 주소를 열어 주세요.'
-        +'<button type="button" id="netRetry">다시 확인</button>';
-      var b=document.getElementById('netRetry'); if(b) b.addEventListener('click',function(){checkServer();});
-    });
+  var attempt=function(n){
+    return apiGet({api:'ping'},30000).then(function(j){ if(!(j&&j.ok)) throw new Error('bad response'); })
+      .catch(function(err){ if(n>0) return new Promise(function(r){setTimeout(r,3000);}).then(function(){return attempt(n-1);}); throw err; });
+  };
+  attempt(1).catch(function(err){
+    el.style.display='block';
+    el.innerHTML='<b>제출 서버(구글) 연결을 확인하지 못했습니다.</b> 과목 선택·저장은 되지만 제출이 지연되거나 실패할 수 있습니다. '
+      +'계속 실패하면 휴대폰 데이터(LTE/5G)나 다른 브라우저(크롬·엣지·사파리)로 이 주소를 열어 주세요.'
+      +'<button type="button" id="netRetry">다시 확인</button>'
+      +'<div class="mini" style="margin-top:4px;color:#9aa7b8">사유: '+esc(((err&&err.name)||'')+' '+((err&&err.message)||''))+'</div>';
+    var b=document.getElementById('netRetry'); if(b) b.addEventListener('click',function(){checkServer();});
+  });
 }
 
 /* ===== 랜딩(학과 목록) + 라우팅 + 정적 데이터 로딩 ===== */
@@ -628,6 +668,7 @@ Promise.all([
 ]).then(function(res){
   INDEX=res[0];
   (res[1].submitted||[]).forEach(function(nm){SUBMITTED[nm]=1;});
+  FOLDERS=res[1].folders||{};
   // 이번 브라우저에서 방금 제출한 학과도 즉시 제출완료로(cron 갱신 전까지)
   try{ (JSON.parse(localStorage.getItem('aid_submitted')||'[]')).forEach(function(nm){SUBMITTED[nm]=1;}); }catch(e){}
   renderList(); route();

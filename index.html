@@ -119,7 +119,7 @@ a.dept .nm{font-weight:700;font-size:15px} a.dept .cnt{color:#5C6B7B;font-size:1
   <div class="lcard">
     <h2 class="lh">학과 선택 (<span id="deptCount">36</span>개)</h2>
     <div class="grid" id="grid"><p class="lnote" id="loadingMsg">불러오는 중…</p></div>
-    <p class="lnote">· <b style="color:#1F7A57">적용완료</b> = 전 과목 AI 4주 이상 반영 · <b style="color:#C55A0E">수정 N</b> = AI 4주 미만 과목 N개. 판정 근거는 nds 강의계획서 실측 데이터<span id="asOf"></span>. <span style="color:#9aa7b8">· 화면 빌드 2026-09-10c</span></p>
+    <p class="lnote">· <b style="color:#1F7A57">적용완료</b> = 전 과목 AI 4주 이상 반영 · <b style="color:#C55A0E">수정 N</b> = AI 4주 미만 과목 N개. 판정 근거는 nds 강의계획서 실측 데이터<span id="asOf"></span>. <span style="color:#9aa7b8">· 화면 빌드 2026-09-10d</span></p>
   </div>
 </div>
 <div id="detailWrap">
@@ -168,6 +168,7 @@ a.dept .nm{font-weight:700;font-size:15px} a.dept .cnt{color:#5C6B7B;font-size:1
 
 var DEPT = null;
 var DC=null;
+var BUILD='2026-09-10d';   // version.json 의 build 와 다르면 자동 새로고침(배포 후 구버전 화면 방지)
 var LAST_MADE='';
 var FOLDERS={};   // submitted.json 의 결과폴더 지도(학과명 → {url, madeAt})
 var CH={}, CONFIRMED={}, SELF={}, SAVED={};
@@ -662,6 +663,7 @@ function route(){var m=/dept=([^&]+)/.exec(location.hash||'');if(m&&INDEX){loadD
 window.addEventListener('hashchange',route);
 document.getElementById('backBtn')&&document.getElementById('backBtn').addEventListener('click',function(e){e.preventDefault();if(history.pushState){history.pushState('',document.title,location.pathname+location.search);showList();}else{location.hash='';}});
 function boot(){
+  checkBuild();
 Promise.all([
   fetch('data/index.json?v='+Date.now()).then(function(r){return r.json();}),
   fetch('submitted.json?v='+Date.now()).then(function(r){return r.ok?r.json():{submitted:[]};}).catch(function(){return {submitted:[]};})
@@ -673,6 +675,17 @@ Promise.all([
   try{ (JSON.parse(localStorage.getItem('aid_submitted')||'[]')).forEach(function(nm){SUBMITTED[nm]=1;}); }catch(e){}
   renderList(); route();
 }).catch(function(){var lm=document.getElementById('loadingMsg'); if(lm) lm.innerHTML='데이터를 불러오지 못했습니다. 네트워크를 확인한 뒤 <button type="button" onclick="location.reload()" style="padding:4px 10px;cursor:pointer">새로고침</button> 해 주세요.';});
+}
+/* 배포된 최신 빌드와 다르면 1회 자동 새로고침(세션당 1회, CDN 캐시가 남아 있으면 다음 방문 때 재시도) */
+function checkBuild(){
+  try{
+    fetch('version.json?v='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(v){
+      if(!(v&&v.build)||v.build===BUILD) return;
+      var k='aid_reload_'+v.build;
+      try{ if(sessionStorage.getItem(k)) return; sessionStorage.setItem(k,'1'); }catch(e){ return; }
+      location.reload();
+    }).catch(function(){});
+  }catch(e){}
 }
 if(!window.fetch || !window.Promise || !window.JSON){
   var _lm=document.getElementById('loadingMsg');

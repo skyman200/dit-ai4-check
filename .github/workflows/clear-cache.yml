@@ -1,0 +1,29 @@
+name: 학과 데이터 변경 시 서버 캐시 자동 비우기
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "data/**"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  clear:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apps Script 캐시 비우기
+        env:
+          EXEC: https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec
+          KEY: ${{ secrets.AID_ADMIN_KEY }}
+        run: |
+          set -euo pipefail
+          for i in 1 2 3; do
+            out=$(curl -sS -L --max-time 120 "$EXEC?admin=clearcache&key=$KEY" || true)
+            echo "응답: $out"
+            if echo "$out" | grep -q '"ok":true'; then exit 0; fi
+            sleep 15
+          done
+          echo "캐시 비우기 실패(3회)"; exit 1

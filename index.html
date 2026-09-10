@@ -119,7 +119,7 @@ a.dept .nm{font-weight:700;font-size:15px} a.dept .cnt{color:#5C6B7B;font-size:1
   <div class="lcard">
     <h2 class="lh">학과 선택 (<span id="deptCount">36</span>개)</h2>
     <div class="grid" id="grid"><p class="lnote" id="loadingMsg">불러오는 중…</p></div>
-    <p class="lnote">· <b style="color:#1F7A57">적용완료</b> = 전 과목 AI 4주 이상 반영 · <b style="color:#C55A0E">수정 N</b> = AI 4주 미만 과목 N개. 판정 근거는 nds 강의계획서 실측 데이터<span id="asOf"></span>. <span style="color:#9aa7b8">· 화면 빌드 2026-09-10e</span></p>
+    <p class="lnote">· <b style="color:#1F7A57">적용완료</b> = 전 과목 AI 4주 이상 반영 · <b style="color:#C55A0E">수정 N</b> = AI 4주 미만 과목 N개. 판정 근거는 nds 강의계획서 실측 데이터<span id="asOf"></span>. <span style="color:#9aa7b8">· 화면 빌드 2026-09-10f</span></p>
   </div>
 </div>
 <div id="detailWrap">
@@ -168,8 +168,9 @@ a.dept .nm{font-weight:700;font-size:15px} a.dept .cnt{color:#5C6B7B;font-size:1
 
 var DEPT = null;
 var DC=null;
-var BUILD='2026-09-10e';   // version.json 의 build 와 다르면 자동 새로고침(배포 후 구버전 화면 방지)
+var BUILD='2026-09-10f';   // version.json 의 build 와 다르면 자동 새로고침(배포 후 구버전 화면 방지)
 var LAST_MADE='';
+var _stage={floor:0,cap:0,expect:10,st:0};   // 진행 오버레이 단계 상태
 var FOLDERS={};   // submitted.json 의 결과폴더 지도(학과명 → {url, madeAt})
 var CH={}, CONFIRMED={}, SELF={}, SAVED={};
 
@@ -380,19 +381,24 @@ var _progTimer=null, _progT0=0;
 function startProgress(){
   var ov=document.getElementById('overlay'); ov.style.display='flex';
   _progT0=Date.now();
-  var bar=document.getElementById('ovBar'),pct=document.getElementById('ovPct'),sec=document.getElementById('ovSec'),step=document.getElementById('ovStep');
-  bar.style.width='0%'; pct.textContent='0%';
-  var steps=[[15,'선택 내용을 확인하고 있습니다…'],[40,'강의계획서를 반영하는 중…'],[70,'확정 PDF를 생성하는 중…'],[88,'구글드라이브에 저장하는 중…']];
+  var ti=document.getElementById('ovTitle'); if(ti) ti.textContent='제출 중…';
+  document.getElementById('ovBar').style.width='0%'; document.getElementById('ovPct').textContent='0%';
+  setStage('1단계: 제출 기록과 확정 PDF 저장 중 (보통 5~15초)',0,34,9);
   if(_progTimer)clearInterval(_progTimer);
-  _progTimer=setInterval(function(){
-    var el=(Date.now()-_progT0)/1000;
-    sec.textContent=el.toFixed(1)+'초';
-    // 8초를 목표로 로그 곡선처럼 95%까지
-    var p=Math.min(95, Math.round(95*(1-Math.exp(-el/3.2))));
-    bar.style.width=p+'%'; pct.textContent=p+'%';
-    for(var k=steps.length-1;k>=0;k--){ if(p>=steps[k][0]){ step.textContent=steps[k][1]; break; } }
-    if(el>15) step.textContent='과목 수가 많으면 1~2분 걸릴 수 있습니다. 창을 닫지 말고 기다려 주세요.';
-  },150);
+  _progTimer=setInterval(paintProgress,200);
+}
+/* 단계별 실제 진행률 — 단계 구간(floor→cap)을 예상시간 기준으로 채우고, 단계가 끝나면 다음 구간으로 점프 */
+function setStage(text,floor,cap,expectSec){
+  _stage={floor:floor,cap:cap,expect:expectSec||10,st:Date.now()};
+  var step=document.getElementById('ovStep'); if(step) step.textContent=text;
+  paintProgress();
+}
+function paintProgress(){
+  var el=(Date.now()-_progT0)/1000;
+  var sec=document.getElementById('ovSec'); if(sec) sec.textContent=Math.round(el)+'초';
+  var f=1-Math.exp(-((Date.now()-_stage.st)/1000)/_stage.expect);
+  var p=Math.round(_stage.floor+(_stage.cap-_stage.floor)*Math.min(0.95,f));
+  document.getElementById('ovBar').style.width=p+'%'; document.getElementById('ovPct').textContent=p+'%';
 }
 function stopProgress(ok){
   if(_progTimer){clearInterval(_progTimer);_progTimer=null;}
@@ -518,15 +524,24 @@ function doSubmit(){
     if(!confirm('아직 저장하지 않은 과목 '+unsaved.length+'개('+unsaved.join(', ')+')는 이번 제출에서 제외됩니다.\n저장한 과목만 먼저 제출할까요? (나머지는 나중에 저장 후 다시 제출)')) return;
   }
   var _minStamp=_kstStamp(Date.now()-3*60000);
-  var _body=JSON.stringify({dc:DC,agree:true,selections:selections});
-  var _doFetch=function(retry){
-    var opts={method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:_body}, tid=null;
-    if(typeof AbortController!=='undefined'){ var ctrl=new AbortController(); opts.signal=ctrl.signal; tid=setTimeout(function(){ctrl.abort();},150000); }
+  var _body=JSON.stringify({dc:DC,agree:true,selections:selections,deferPdfs:true});
+  var _post=function(bodyStr,timeoutMs){
+    var opts={method:'POST',redirect:'follow',headers:{'Content-Type':'text/plain;charset=utf-8'},body:bodyStr}, tid=null;
+    if(typeof AbortController!=='undefined'){ var ctrl=new AbortController(); opts.signal=ctrl.signal; tid=setTimeout(function(){ctrl.abort();},timeoutMs||150000); }
     return fetch(EXEC,opts)
       .then(function(r){ if(tid)clearTimeout(tid); return r.text(); })
       .then(function(txt){ try{ return JSON.parse(txt); }catch(e){ var er=new Error('bad-json'); er.raw=String(txt).replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').slice(0,100); throw er; } })
-      .catch(function(err){ if(tid)clearTimeout(tid); if(retry>0 && !(err&&err.name==='AbortError')) return _doFetch(retry-1); throw err; });
+      .catch(function(err){ if(tid)clearTimeout(tid); throw err; });
   };
+  // 1단계: 제출 기록 + 확정 PDF (과목별 PDF 는 2단계에서 최대 3건씩 동시에 생성)
+  var _phase1=function(){
+    return _post(_body,150000).catch(function(err){
+      if(err&&err.name==='AbortError') throw err;
+      // 네트워크 오류: 이미 서버에 반영됐는지 먼저 확인(중복 제출·대기 방지) 후 1회 재시도
+      return _checkSubmitted(_minStamp).then(function(st){ if(st){ st.recovered=true; return st; } return _post(_body,150000); });
+    });
+  };
+  var _pendingLocal=function(){ var out=[],i=0; selections.forEach(function(s){ if(s.verdict==='적용'){ i++; out.push({idx:i,name:s.name}); } }); return out; };
   var _onOk=function(res,note){
     stopProgress(true);
     try{ var arr=JSON.parse(localStorage.getItem('aid_submitted')||'[]'); if(arr.indexOf(DEPT.name)<0)arr.push(DEPT.name); localStorage.setItem('aid_submitted',JSON.stringify(arr)); SUBMITTED[DEPT.name]=1; }catch(e){}
@@ -536,7 +551,7 @@ function doSubmit(){
     msg.className='ok-msg';
     var head=(res.apply!=null)?('제출 완료! AI 적용 '+res.apply+'과목 · 적용 불가 '+res.deny+'과목.'):'제출 완료!';
     msg.innerHTML='✅ '+head+(note?('<br><span class="mini">'+esc(note)+'</span>'):'')
-      +'<br>확정 결과 PDF가 결과받기 폴더에 저장되었습니다'+(res.copied?(' (개선안 PDF '+res.copied+'건 포함)'):'')+'.'
+      +'<br>확정 결과 PDF가 결과받기 폴더에 저장되었습니다'+(res.copied?(' (과목별 강의계획서 PDF '+res.copied+'건 포함)'):'')+'.'
       +'<br>→ <a href="'+esc(res.folderUrl||'')+'" target="_blank" rel="noopener">결과받기/'+esc(DEPT.name)+' 폴더 열기</a>';
     if(res.summary&&res.summary.length){
       msg.innerHTML+='<div style="margin-top:8px;font-size:12.5px;color:#5C6B7B"><b>이번 제출 반영 내역:</b><br>'
@@ -551,18 +566,49 @@ function doSubmit(){
     msg.textContent='⚠ 제출 오류: '+text+'\n선택 내용은 이 브라우저에 저장되어 있습니다. 잠시 후 [제출] 버튼만 다시 누르면 됩니다.';
     document.getElementById('submitBtn').disabled=false;
   };
+  // 2단계: 과목별 강의계획서 PDF 를 최대 3건씩 동시에 생성 (완료 건수 = 실제 진행률)
+  var _phase2=function(res){
+    var pend=(res.pending&&res.pending.length!=null&&!res.recovered)?res.pending:_pendingLocal();
+    var n=pend.length, done=0, failed=[];
+    if(!n){ res.copied=0; res.failedPdfs=[]; return Promise.resolve(res); }
+    var selByName={}; selections.forEach(function(s){ selByName[s.name]=s; });
+    var band=65/n;
+    setStage('2단계: 과목별 강의계획서 PDF '+n+'건 생성 중 (0/'+n+') — 3건씩 동시 진행, 건당 3~10초',35,35+Math.round(band*0.9),6);
+    var gen=function(p,attempt){
+      var b=JSON.stringify({action:'coursePdf',dc:DC,idx:p.idx,name:p.name,selection:selByName[p.name]||{name:p.name,verdict:'적용',method:'fix'}});
+      return _post(b,60000).then(function(r){ if(!(r&&r.ok)) throw new Error((r&&r.error)||'pdf-fail'); })
+        .catch(function(e){ if(attempt<1 && !(e&&e.name==='AbortError')) return gen(p,attempt+1); throw e; });
+    };
+    var queue=pend.slice();
+    var worker=function(){
+      if(!queue.length) return Promise.resolve();
+      var p=queue.shift();
+      return gen(p,0).then(function(){},function(e){ failed.push(p.name); })
+        .then(function(){ done++; var base=35+Math.round(65*done/n); if(done>=n) setStage('마무리 중…',99,99,1); else setStage('2단계: 과목별 강의계획서 PDF 생성 중 ('+done+'/'+n+')',base,Math.min(98,base+Math.round(band*0.9)),6); })
+        .then(worker);
+    };
+    var workers=[]; for(var w=0;w<Math.min(3,n);w++) workers.push(worker());
+    return Promise.all(workers).then(function(){ res.copied=n-failed.length; res.failedPdfs=failed; return res; });
+  };
+  var _finish=function(res){
+    var f=res.failedPdfs||[];
+    var note=(res.recovered?'서버 응답이 늦었지만 제출이 정상 반영된 것을 확인했습니다. ':'')
+      +(f.length?('과목별 PDF '+f.length+'건은 생성되지 않았습니다('+f.join(', ')+'). 잠시 후 [제출]을 한 번 더 누르면 다시 생성됩니다.'):'');
+    _onOk(res,note);
+  };
   try{
     startProgress();
     document.getElementById('submitBtn').disabled=true;
-    _doFetch(1)
+    _phase1()
       .then(function(res){
-        if(res && res.ok){ _onOk(res,''); }
-        else { _onFail((res&&res.error)||'제출 실패'); }
+        if(!(res&&res.ok)){ _onFail((res&&res.error)||'제출 실패'); return null; }
+        setStage('확정 PDF 저장 완료',35,36,1);
+        return _phase2(res);
       })
+      .then(function(res){ if(res) _finish(res); })
       .catch(function(err){
-        // 응답을 못 받았어도 서버(구글)에는 반영됐을 수 있음 → 상태 조회로 확인 후 판정
         _checkSubmitted(_minStamp).then(function(st){
-          if(st){ _onOk(st,'서버 응답이 늦었지만 제출이 정상 반영된 것을 확인했습니다.'); }
+          if(st){ st.recovered=true; setStage('확정 PDF 저장 확인',35,36,1); _phase2(st).then(_finish); }
           else { _onFail(_errMsg(err)); }
         });
       });

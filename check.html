@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>접속 점검 — 강의계획서 AI 4주 체크</title>
+<style>
+body{font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',-apple-system,sans-serif;margin:0;color:#232B37;background:#F7F9FC}
+.wrap{max-width:720px;margin:0 auto;padding:22px 16px 60px}
+h1{font-size:20px;color:#1B2A4A;margin:6px 0 4px}
+.sub{color:#5C6B7B;font-size:13px;line-height:1.6}
+table{width:100%;border-collapse:collapse;background:#fff;font-size:13.5px;margin-top:14px}
+th{background:#28406E;color:#fff;padding:8px;text-align:left;font-weight:600}
+td{padding:9px 8px;border-bottom:1px solid #D3DAE6;vertical-align:top}
+.ok{color:#1F7A57;font-weight:700} .bad{color:#B3261E;font-weight:700} .wait{color:#5C6B7B}
+.mini{font-size:12px;color:#5C6B7B}
+.box{margin-top:16px;padding:12px 14px;background:#fff;border:1px solid #D3DAE6;border-radius:6px;font-size:13px;line-height:1.7;word-break:break-all}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>접속 점검</h1>
+  <p class="sub">이 화면이 보이면 사이트 자체는 열린 것입니다. 10초쯤 기다린 뒤 <b>화면을 캡처해서 보내 주시면</b> 어느 연결이 막혔는지 바로 알 수 있습니다.</p>
+  <table>
+    <thead><tr><th style="width:40%">확인 항목</th><th style="width:16%">결과</th><th>설명</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div class="box" id="env"></div>
+</div>
+<script>
+(function(){
+  var EXEC='https://script.google.com/macros/s/AKfycbwOGZeT4czLR4HV6KY4R02gndHNUO_w6FSvQh1kj5FUQOIJO1LWfhNUJ29zxtkc4ZMK/exec';
+  var tests=[
+    ['사이트 서버 (skyman200.github.io)', 'https://skyman200.github.io/dit-ai4-check/version.json', 'fetch', '체크 화면과 학과 데이터가 있는 곳'],
+    ['제출 서버 (script.google.com)', EXEC+'?api=ping', 'fetch', '선택 내용을 제출하고 PDF를 만드는 곳. 실패하면 제출이 안 됨'],
+    ['구글 드라이브 (drive.google.com)', 'https://drive.google.com/favicon.ico', 'img', '결과 PDF 폴더를 여는 곳'],
+    ['글꼴 CDN (cdn.jsdelivr.net)', 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css', 'fetch', '실패해도 동작에는 지장 없음']
+  ];
+  var tb=document.getElementById('rows');
+  tests.forEach(function(t,i){
+    var tr=document.createElement('tr');
+    tr.innerHTML='<td>'+t[0]+'</td><td id="r'+i+'" class="wait">확인 중…</td><td class="mini">'+t[3]+'</td>';
+    tb.appendChild(tr);
+    var t0=Date.now(), done=false;
+    function fin(ok,msg){ if(done)return; done=true; var el=document.getElementById('r'+i); el.className=ok?'ok':'bad'; el.textContent=(ok?'정상':'실패')+' ('+(Date.now()-t0)+'ms)'+(msg?(' '+msg):''); }
+    setTimeout(function(){ fin(false,'시간 초과'); },25000);
+    if(t[2]==='img'){ var im=new Image(); im.onload=function(){fin(true);}; im.onerror=function(){fin(false);}; im.src=t[1]+'?_='+Date.now(); return; }
+    if(!window.fetch){ fin(false,'구형 브라우저'); return; }
+    fetch(t[1]+(t[1].indexOf('?')>=0?'&':'?')+'_='+Date.now(),{cache:'no-store'}).then(function(r){ fin(r.ok, 'HTTP '+r.status); }).catch(function(e){ fin(false, (e&&e.message)||''); });
+  });
+  document.getElementById('env').innerHTML='<b>브라우저</b>: '+navigator.userAgent+'<br><b>시각</b>: '+new Date().toLocaleString()+'<br><b>이 화면 주소</b>: '+location.href;
+})();
+</script>
+</body>
+</html>

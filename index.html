@@ -120,7 +120,7 @@ a.dept .nm{font-weight:700;font-size:15px} a.dept .cnt{color:#5C6B7B;font-size:1
   <div class="lcard">
     <h2 class="lh">학과 선택 (<span id="deptCount">36</span>개)</h2>
     <div class="grid" id="grid"><p class="lnote" id="loadingMsg">불러오는 중…</p></div>
-    <p class="lnote">· <b style="color:#1F7A57">적용완료</b> = 전 과목 AI 4주 이상 반영 · <b style="color:#C55A0E">수정 N</b> = AI 4주 미만 과목 N개. 판정 근거는 nds 강의계획서 실측 데이터<span id="asOf"></span>. <span style="color:#9aa7b8">· 화면 빌드 2026-09-10g</span></p>
+    <p class="lnote">· <b style="color:#1F7A57">적용완료</b> = 전 과목 AI 4주 이상 반영 · <b style="color:#C55A0E">수정 N</b> = AI 4주 미만 과목 N개. 판정 근거는 nds 강의계획서 실측 데이터<span id="asOf"></span>. <span style="color:#9aa7b8">· 화면 빌드 2026-09-10h</span></p>
   </div>
 </div>
 <div id="detailWrap">
@@ -169,7 +169,7 @@ a.dept .nm{font-weight:700;font-size:15px} a.dept .cnt{color:#5C6B7B;font-size:1
 
 var DEPT = null;
 var DC=null;
-var BUILD='2026-09-10g';   // version.json 의 build 와 다르면 자동 새로고침(배포 후 구버전 화면 방지)
+var BUILD='2026-09-10h';   // version.json 의 build 와 다르면 자동 새로고침(배포 후 구버전 화면 방지)
 var LAST_MADE='';
 var _stage={floor:0,cap:0,expect:10,st:0};   // 진행 오버레이 단계 상태
 var FOLDERS={};   // submitted.json 의 결과폴더 지도(학과명 → {url, madeAt})
@@ -210,7 +210,7 @@ function renderDoneBanner(st){
     +'</div><div id="dbInfo" class="mini" style="margin-top:6px"></div><div id="dbHint" class="mini" style="margin-top:6px;display:none;color:#C55A0E"></div>';
   var known=knownFolder();
   renderFolderBtn(known?known.url:null, known?'':'loading');
-  if(known&&known.madeAt) LAST_MADE=String(known.madeAt);
+  if(known&&known.madeAt&&String(known.madeAt)>LAST_MADE) LAST_MADE=String(known.madeAt);
   updateDbInfo(st);
   document.getElementById('dbHow').addEventListener('click',function(){
     var h=document.getElementById('dbHint'); h.style.display='block';
@@ -240,7 +240,7 @@ function fetchStatus(){
     if(st.submitted&&!SUBMITTED[DEPT.name]){ SUBMITTED[DEPT.name]=1; renderDoneBanner(st); }
     if(st.folderUrl){ saveFolder(st.folderUrl, st.madeAt||''); renderFolderBtn(st.folderUrl,''); }
     else if(document.getElementById('dbFolderWrap')&&!knownFolder()){ renderFolderBtn(null,'fallback'); }
-    if(st.madeAt) LAST_MADE=String(st.madeAt);
+    if(st.madeAt&&String(st.madeAt)>LAST_MADE) LAST_MADE=String(st.madeAt);
     RECORDS=st.courses||{};
     applyRecords();
     updateDbInfo(st);

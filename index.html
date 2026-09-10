@@ -8,9 +8,9 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="강의계획서 AI 4주 적용 — 학과 온라인 체크">
 <meta property="og:description" content="우리 학과 전 과목의 AI 적용 여부를 클릭 한 번으로 확인·확정. 결과는 구글드라이브에 자동 저장됩니다.">
-<meta property="og:image" content="https://skyman200.github.io/dit-ai4-check/og.png?v=2">
+<meta property="og:image" content="https://dit-ai4-check.pages.dev/og.png?v=3">
 <meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
-<meta property="og:url" content="https://skyman200.github.io/dit-ai4-check/">
+<meta property="og:url" content="https://dit-ai4-check.pages.dev/">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <style>
@@ -119,7 +119,7 @@ a.dept .nm{font-weight:700;font-size:15px} a.dept .cnt{color:#5C6B7B;font-size:1
   <div class="lcard">
     <h2 class="lh">학과 선택 (<span id="deptCount">36</span>개)</h2>
     <div class="grid" id="grid"><p class="lnote" id="loadingMsg">불러오는 중…</p></div>
-    <p class="lnote">· <b style="color:#1F7A57">적용완료</b> = 전 과목 AI 4주 이상 반영 · <b style="color:#C55A0E">수정 N</b> = AI 4주 미만 과목 N개. 판정 근거는 nds 강의계획서 실측 데이터<span id="asOf"></span>. <span style="color:#9aa7b8">· 화면 빌드 2026-09-10d</span></p>
+    <p class="lnote">· <b style="color:#1F7A57">적용완료</b> = 전 과목 AI 4주 이상 반영 · <b style="color:#C55A0E">수정 N</b> = AI 4주 미만 과목 N개. 판정 근거는 nds 강의계획서 실측 데이터<span id="asOf"></span>. <span style="color:#9aa7b8">· 화면 빌드 2026-09-10e</span></p>
   </div>
 </div>
 <div id="detailWrap">
@@ -168,7 +168,7 @@ a.dept .nm{font-weight:700;font-size:15px} a.dept .cnt{color:#5C6B7B;font-size:1
 
 var DEPT = null;
 var DC=null;
-var BUILD='2026-09-10d';   // version.json 의 build 와 다르면 자동 새로고침(배포 후 구버전 화면 방지)
+var BUILD='2026-09-10e';   // version.json 의 build 와 다르면 자동 새로고침(배포 후 구버전 화면 방지)
 var LAST_MADE='';
 var FOLDERS={};   // submitted.json 의 결과폴더 지도(학과명 → {url, madeAt})
 var CH={}, CONFIRMED={}, SELF={}, SAVED={};

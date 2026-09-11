@@ -7,6 +7,7 @@
   "베이커리카페산업과",
   "보건행정과",
   "부동산풍수과",
+  "사회복지융합계열",
   "사회복지학과",
   "소방안전관리과",
   "스마트기계자동차과",
@@ -52,6 +53,10 @@
   "부동산풍수과": {
    "url": "https://drive.google.com/drive/folders/1vptTTuiN56o5PhoRj6uRZm4_o4HAzB-o",
    "madeAt": "20260907_1141"
+  },
+  "사회복지융합계열": {
+   "url": "https://drive.google.com/drive/folders/1CuqFgEdlHUO2Z8tK4F2utNzPcSaLMN6X",
+   "madeAt": "20260911_1001"
   },
   "사회복지학과": {
    "url": "https://drive.google.com/drive/folders/1n7pR0R1E18Q62R4zdMxZHNZVtoQMe12v",
@@ -128,7 +133,7 @@
    "need": 14
   },
   "사회복지융합계열": {
-   "done": 0,
+   "done": 1,
    "need": 1
   },
   "K-글로벌학부 K-Beauty과": {
